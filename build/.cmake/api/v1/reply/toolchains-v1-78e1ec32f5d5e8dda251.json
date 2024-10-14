@@ -5,26 +5,23 @@
 		{
 			"compiler" : 
 			{
-				"id" : "Clang",
+				"id" : "GNU",
 				"implicit" : 
 				{
 					"includeDirectories" : 
 					[
-						"/usr/lib/llvm-14/lib/clang/14.0.0/include",
+						"/usr/lib/gcc/x86_64-linux-gnu/11/include",
 						"/usr/local/include",
 						"/usr/include/x86_64-linux-gnu",
 						"/usr/include"
 					],
 					"linkDirectories" : 
 					[
-						"/usr/lib/gcc/x86_64-linux-gnu/12",
-						"/usr/lib64",
-						"/lib/x86_64-linux-gnu",
-						"/lib64",
+						"/usr/lib/gcc/x86_64-linux-gnu/11",
 						"/usr/lib/x86_64-linux-gnu",
-						"/usr/lib/llvm-14/lib",
-						"/lib",
-						"/usr/lib"
+						"/usr/lib",
+						"/lib/x86_64-linux-gnu",
+						"/lib"
 					],
 					"linkFrameworkDirectories" : [],
 					"linkLibraries" : 
@@ -36,8 +33,8 @@
 						"gcc_s"
 					]
 				},
-				"path" : "/usr/bin/clang-14",
-				"version" : "14.0.0"
+				"path" : "/usr/bin/gcc",
+				"version" : "11.4.0"
 			},
 			"language" : "C",
 			"sourceFileExtensions" : 
