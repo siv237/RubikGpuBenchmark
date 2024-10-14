@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/home/siv/proj/proj1/build",
+  "command": "/usr/bin/g++  -isystem /usr/lib -g -std=gnu++11 -o CMakeFiles/GPUTest.dir/main.cpp.o -c /home/siv/proj/proj1/main.cpp",
+  "file": "/home/siv/proj/proj1/main.cpp"
+}
+]

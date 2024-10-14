@@ -1,0 +1,3 @@
+/home/siv/proj/proj1/build/CMakeFiles/GPUTest.dir
+/home/siv/proj/proj1/build/CMakeFiles/edit_cache.dir
+/home/siv/proj/proj1/build/CMakeFiles/rebuild_cache.dir
