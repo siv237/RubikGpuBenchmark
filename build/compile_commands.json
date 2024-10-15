@@ -1,7 +1,0 @@
-[
-{
-  "directory": "/home/siv/proj/proj1/build",
-  "command": "/usr/bin/g++  -I/usr/include/freetype2 -isystem /usr/lib -g -std=gnu++17 -o CMakeFiles/RGBench.dir/main.cpp.o -c /home/siv/proj/proj1/main.cpp",
-  "file": "/home/siv/proj/proj1/main.cpp"
-}
-]

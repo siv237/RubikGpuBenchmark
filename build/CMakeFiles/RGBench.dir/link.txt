@@ -1,1 +1,0 @@
-/usr/bin/g++ -g CMakeFiles/RGBench.dir/main.cpp.o -o rgbench  /usr/lib/x86_64-linux-gnu/libGL.so /usr/lib/x86_64-linux-gnu/libGLEW.so /usr/lib/x86_64-linux-gnu/libglfw.so.3.3 /usr/lib/x86_64-linux-gnu/libfreetype.so 
