@@ -16,6 +16,11 @@
 #include <chrono>
 #include <ctime>
 #include <algorithm> // Добавьте эту строку в начало файла
+#include <cstdio>
+#include <memory>
+#include <stdexcept>
+#include <array>
+#include <fstream>
 
 // Добавьте эти определения в начало файла, после включения библиотек
 // const int FPS_HISTORY_SIZE = 200;
@@ -336,6 +341,101 @@ double lastGraphUpdateTime = 0.0;
 // Добавьте эту переменную в начало файла, где объявлены другие глобальные переменные
 bool isFirstValidMeasurement = true;
 
+// Добавьте эту функцию перед функцией main()
+std::string getMonitorInfo(GLFWwindow* window) {
+    GLFWmonitor* monitor = glfwGetWindowMonitor(window);
+    if (!monitor) {
+        monitor = glfwGetPrimaryMonitor();
+    }
+    
+    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+    int width = mode->width;
+    int height = mode->height;
+    int refreshRate = mode->refreshRate;
+    
+    const char* monitorName = glfwGetMonitorName(monitor);
+    
+    std::stringstream ss;
+    ss << monitorName << " - " << width << "x" << height << " @ " << refreshRate << "Hz";
+    return ss.str();
+}
+
+// Добавьте эту функцию перед main()
+std::string exec(const char* cmd) {
+    std::array<char, 128> buffer;
+    std::string result;
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
+    if (!pipe) {
+        throw std::runtime_error("popen() failed!");
+    }
+    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+        result += buffer.data();
+    }
+    return result;
+}
+
+std::string getVRAMInfo() {
+    std::string result;
+    try {
+        result = exec("glxinfo | grep 'Video memory'");
+        
+        // Удаляем лишние пробелы и переносы строк
+        result.erase(std::remove(result.begin(), result.end(), '\n'), result.end());
+        result.erase(std::remove(result.begin(), result.end(), '\r'), result.end());
+        
+        // Извлекаем только объем памяти
+        size_t colonPos = result.find(':');
+        if (colonPos != std::string::npos) {
+            result = result.substr(colonPos + 1);
+            // Удаляем начальные пробелы
+            result.erase(0, result.find_first_not_of(' '));
+        }
+        
+        // Если результат пустой, возвращаем "Unknown"
+        if (result.empty()) {
+            result = "Unknown";
+        }
+    } catch (std::exception& e) {
+        result = "Unknown";
+    }
+    
+    return "VRAM: " + result;
+}
+
+// Добавьте эти функции перед main()
+
+std::string getCPUInfo() {
+    std::ifstream cpuinfo("/proc/cpuinfo");
+    std::string line;
+    std::string cpu_model;
+    while (std::getline(cpuinfo, line)) {
+        if (line.substr(0, 10) == "model name") {
+            cpu_model = line.substr(line.find(":") + 2);
+            break;
+        }
+    }
+    return "CPU: " + (cpu_model.empty() ? "Unknown" : cpu_model);
+}
+
+std::string getRAMInfo() {
+    std::ifstream meminfo("/proc/meminfo");
+    std::string line;
+    long total_ram = 0;
+    while (std::getline(meminfo, line)) {
+        if (line.substr(0, 8) == "MemTotal") {
+            std::istringstream iss(line);
+            std::string key, value, unit;
+            iss >> key >> value >> unit;
+            total_ram = std::stol(value);
+            break;
+        }
+    }
+    double ram_gb = total_ram / (1024.0 * 1024.0);
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(2) << ram_gb << " GB";
+    return "RAM: " + ss.str();
+}
+
 int main()
 {
     // Инициализация GLFW
@@ -545,7 +645,7 @@ int main()
     std::string fpsText = "FPS: 0";
     std::string avgFpsText = "Avg: 0";
 
-    // Дбавьте эту переменную перед циклом рендеринга
+    // Дбавьте эту переменную пере циклом рендеринга
     double fps = 0.0;
 
     // В функции main() после инициализации OpenGL добавьте:
@@ -559,6 +659,16 @@ int main()
 
     // Добавьте эту строку в начало функции main(), после инициализации GLFW
     auto startTime = std::chrono::steady_clock::now();
+
+    // В функции main(), после инициализации GLFW и создания окна, добавьте:
+    std::string monitorInfo = getMonitorInfo(window);
+
+    // В функции main(), после инициализации OpenGL, добавьте:
+    std::string vramInfo = getVRAMInfo();
+
+    // В функции main(), после получения информации о GPU и VRAM, добавьте:
+    std::string cpuInfo = getCPUInfo();
+    std::string ramInfo = getRAMInfo();
 
     // Главный цикл рендеринга
     while (!glfwWindowShouldClose(window))
@@ -710,7 +820,7 @@ int main()
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(frameVertices), frameVertices);
         glDrawArrays(GL_LINES, 0, 8);
 
-        // Рисуем текущий FPS (красные точки)
+        // Рисем текущий FPS (красные точки)
         glUniform3f(glGetUniformLocation(lineShaderProgram, "color"), 1.0f, 0.0f, 0.0f); // Красный цвет
         std::vector<float> pointVertices;
         for (int i = 0; i < GRAPH_WIDTH; i++) {
@@ -750,43 +860,47 @@ int main()
         glUseProgram(textShaderProgram);
         glUniformMatrix4fv(glGetUniformLocation(textShaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(glm::ortho(0.0f, 800.0f, 0.0f, 800.0f)));
 
-        // В функции main(), замените код рендеринга FPS и AVG FPS на следующий:
+        float textScale = 0.4f;
+        float textX = 10.0f; // Отступ слева
+        float textY = 780.0f; // Начальная позиция сверху
+        float lineSpacing = 25.0f; // Расстояние между строками
 
-        // Рендеринг FPS и AVG FPS в левом верхнем углу над графиком
-        float fpsScale = 0.5f;
-        float labelWidth = 60.0f; // Увеличим ширину для меток
-        float valueWidth = 100.0f; // Фиксированная ширина для значений
+        // Рендеринг имени GPU
+        renderText(gpuName, textX, textY, textScale, glm::vec3(1.0f, 1.0f, 0.0f)); // Желтый цвет
+        textY -= lineSpacing;
 
-        std::string fpsLabel = "FPS:";
-        std::string avgLabel = "Avg:";
+        // Рендеринг VRAM
+        renderText(vramInfo, textX, textY, textScale, glm::vec3(0.7f, 0.7f, 1.0f)); // Светло-голубой цвет
+        textY -= lineSpacing;
 
-        renderText(fpsLabel, GRAPH_LEFT, GRAPH_BOTTOM + GRAPH_HEIGHT + 30, fpsScale, glm::vec3(1.0f, 1.0f, 1.0f)); // Белый цвет
-        renderText(avgLabel, GRAPH_LEFT, GRAPH_BOTTOM + GRAPH_HEIGHT + 10, fpsScale, glm::vec3(1.0f, 1.0f, 1.0f)); // Белый цвет
+        // Рендеринг CPU
+        renderText(cpuInfo, textX, textY, textScale, glm::vec3(1.0f, 0.7f, 0.7f)); // Светло-красный цвет
+        textY -= lineSpacing;
 
-        // Обновляем значения FPS и AVG FPS
+        // Рендеринг RAM
+        renderText(ramInfo, textX, textY, textScale, glm::vec3(0.7f, 1.0f, 0.7f)); // Светло-зеленый цвет
+        textY -= lineSpacing;
+
+        // Рендеринг информации о мониторе
+        renderText(monitorInfo, textX, textY, textScale, glm::vec3(0.7f, 0.7f, 0.7f)); // Светло-серый цвет
+
+        // Рендеринг FPS и AVG FPS рядом с графиком
         fpsStream.str("");
         avgFpsStream.str("");
         fpsStream << std::fixed << std::setprecision(2) << fps;
         avgFpsStream << std::fixed << std::setprecision(2) << fpsEstimate;
 
-        renderText(fpsStream.str(), GRAPH_LEFT + labelWidth, GRAPH_BOTTOM + GRAPH_HEIGHT + 30, fpsScale, glm::vec3(1.0f, 0.0f, 0.0f)); // Красный цвет
-        renderText(avgFpsStream.str(), GRAPH_LEFT + labelWidth, GRAPH_BOTTOM + GRAPH_HEIGHT + 10, fpsScale, glm::vec3(0.0f, 1.0f, 0.0f)); // Зеленый цвет
+        std::string fpsText = "FPS: " + fpsStream.str();
+        std::string avgFpsText = "Avg: " + avgFpsStream.str();
+
+        renderText(fpsText, GRAPH_LEFT, GRAPH_BOTTOM - 30, textScale, glm::vec3(1.0f, 0.0f, 0.0f)); // Красный цвет
+        renderText(avgFpsText, GRAPH_LEFT + 150, GRAPH_BOTTOM - 30, textScale, glm::vec3(0.0f, 1.0f, 0.0f)); // Зеленый цвет
 
         // Добавляем подписи к графику
         std::string maxFpsLabel = "Max: " + std::to_string(static_cast<int>(graphMax));
         std::string minFpsLabel = "Min: " + std::to_string(static_cast<int>(graphMin));
         renderText(maxFpsLabel, GRAPH_LEFT + GRAPH_WIDTH + 5, GRAPH_BOTTOM + GRAPH_HEIGHT - 20, 0.4f, glm::vec3(1.0f, 1.0f, 1.0f));
         renderText(minFpsLabel, GRAPH_LEFT + GRAPH_WIDTH + 5, GRAPH_BOTTOM, 0.4f, glm::vec3(1.0f, 1.0f, 1.0f));
-
-        // Рендеринг имени GPU вверху по центру
-        float gpuScale = 0.5f;
-        float maxWidth = 780.0f; // Оставляем небольшой отступ по краям
-        while (getTextWidth(gpuName, gpuScale) > maxWidth) {
-            gpuScale *= 0.9f;
-        }
-        float gpuNameWidth = getTextWidth(gpuName, gpuScale);
-        float gpuNameX = (800.0f - gpuNameWidth) / 2.0f;
-        renderText(gpuName, gpuNameX, 770, gpuScale, glm::vec3(1.0f, 1.0f, 0.0f)); // Желтый цвет
 
         glEnable(GL_DEPTH_TEST);
 
