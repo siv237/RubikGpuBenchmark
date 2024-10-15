@@ -15,6 +15,26 @@
 #include FT_FREETYPE_H
 #include <chrono>
 #include <ctime>
+#include <algorithm> // Добавьте эту строку в начало файла
+
+// Добавьте эти определения в начало файла, после включения библиотек
+// const int FPS_HISTORY_SIZE = 200;
+// std::vector<float> fpsHistory(FPS_HISTORY_SIZE, 0.0f);
+// std::vector<float> avgFpsHistory(FPS_HISTORY_SIZE, 0.0f);
+
+// Добавьте эту глобальную переменную
+int currentGraphIndex = 0;
+
+// Добавьте эти глобальные переменные
+float minFps = std::numeric_limits<float>::max();
+float maxFps = 0.0f;
+
+// Объявите shaderProgram глобально
+unsigned int shaderProgram;
+
+// Добавьте эту глобальную переменную в начало файла
+unsigned int lineVAO, lineVBO;
+unsigned int lineShaderProgram;
 
 struct Character {
     unsigned int TextureID;
@@ -74,6 +94,27 @@ const char* textFragmentShaderSource = R"(
     {    
         vec4 sampled = vec4(1.0, 1.0, 1.0, texture(text, TexCoords).r);
         color = vec4(textColor, 1.0) * sampled;
+    }
+)";
+
+// Добавьте эти шейдеры для линий
+const char* lineVertexShaderSource = R"(
+    #version 330 core
+    layout (location = 0) in vec2 aPos;
+    uniform mat4 projection;
+    void main()
+    {
+        gl_Position = projection * vec4(aPos.x, aPos.y, 0.0, 1.0);
+    }
+)";
+
+const char* lineFragmentShaderSource = R"(
+    #version 330 core
+    out vec4 FragColor;
+    uniform vec3 color;
+    void main()
+    {
+        FragColor = vec4(color, 1.0);
     }
 )";
 
@@ -245,6 +286,55 @@ std::string getGPUName() {
     return "Неизвестная видеокарта";
 }
 
+// Добавьте ту функцию перед main():
+float getTextWidth(const std::string& text, float scale) {
+    float width = 0.0f;
+    for (char c : text) {
+        Character ch = Characters[c];
+        width += (ch.Advance >> 6) * scale;
+    }
+    return width;
+}
+
+// Измените функцию drawLine следующим образом:
+void drawLine(float x1, float y1, float x2, float y2, glm::vec3 color, unsigned int program) {
+    glUseProgram(program);
+    
+    float vertices[] = {
+        x1, y1, 0.0f,
+        x2, y2, 0.0f
+    };
+    
+    glBindVertexArray(lineVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, lineVBO);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+    
+    glm::mat4 projection = glm::ortho(0.0f, 800.0f, 0.0f, 800.0f);
+    glUniformMatrix4fv(glGetUniformLocation(program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+    glUniformMatrix4fv(glGetUniformLocation(program, "view"), 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
+    glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
+    
+    glUniform3fv(glGetUniformLocation(program, "ourColor"), 1, glm::value_ptr(color));
+    
+    glDrawArrays(GL_LINES, 0, 2);
+}
+
+// В начале фай добавьте или измените следующие глобальные переменные:
+const int GRAPH_WIDTH = 550;
+const int GRAPH_HEIGHT = 100;
+const int GRAPH_BOTTOM = 10;
+int currentGraphX = 0;
+std::vector<float> fpsHistory(GRAPH_WIDTH, -1.0f);
+std::vector<float> avgFpsHistory(GRAPH_WIDTH, -1.0f);
+float graphMin = 0.0f;
+float graphMax = 5000.0f; // Начальное максимальное значение
+
+// Добавьте эту переменную в начало файла
+double lastGraphUpdateTime = 0.0;
+
+// Добавьте эту переменную в начало файла, где объявлены другие глобальные переменные
+bool isFirstValidMeasurement = true;
+
 int main()
 {
     // Инициализация GLFW
@@ -259,7 +349,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     
-    // Добавьте эту строку, чтобы запретить изменение размера окна
+    // Добавьте эту строку, чтобы запретить изменение размера ока
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
     // Создание окна
@@ -272,7 +362,7 @@ int main()
     }
     glfwMakeContextCurrent(window);
 
-    // Инициализация GLEW
+    // Инициизация GLEW
     if (glewInit() != GLEW_OK)
     {
         std::cerr << "Failed to initialize GLEW" << std::endl;
@@ -302,7 +392,8 @@ int main()
     glCompileShader(fragmentShader);
     checkShaderCompileErrors(fragmentShader, "FRAGMENT");
 
-    unsigned int shaderProgram = glCreateProgram();
+    // После компиляции шейдеров
+    shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertexShader);
     glAttachShader(shaderProgram, fragmentShader);
     glLinkProgram(shaderProgram);
@@ -342,9 +433,51 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    // Добавьте это в функцию main() после инициализации OpenGL
+    // Добавьте эту строку в функцию main() после инициализации OpenGL
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // В функции main(), после инициализации OpenGL, добавьте:
+    glGenVertexArrays(1, &lineVAO);
+    glGenBuffers(1, &lineVBO);
+    glBindVertexArray(lineVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, lineVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    // Компиляция шейдеро для линий
+    unsigned int lineVertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(lineVertexShader, 1, &lineVertexShaderSource, NULL);
+    glCompileShader(lineVertexShader);
+    checkShaderCompileErrors(lineVertexShader, "LINE_VERTEX");
+
+    unsigned int lineFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(lineFragmentShader, 1, &lineFragmentShaderSource, NULL);
+    glCompileShader(lineFragmentShader);
+    checkShaderCompileErrors(lineFragmentShader, "LINE_FRAGMENT");
+
+    lineShaderProgram = glCreateProgram();
+    glAttachShader(lineShaderProgram, lineVertexShader);
+    glAttachShader(lineShaderProgram, lineFragmentShader);
+    glLinkProgram(lineShaderProgram);
+    checkShaderCompileErrors(lineShaderProgram, "LINE_PROGRAM");
+
+    glDeleteShader(lineVertexShader);
+    glDeleteShader(lineFragmentShader);
+
+    // Создание VAO и VBO для линий
+    glGenVertexArrays(1, &lineVAO);
+    glGenBuffers(1, &lineVBO);
+    glBindVertexArray(lineVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, lineVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * GRAPH_WIDTH * 4, NULL, GL_DYNAMIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 
     // Вершины куба с цветами
     float vertices[] = {
@@ -411,7 +544,7 @@ int main()
     std::string fpsText = "FPS: 0";
     std::string avgFpsText = "Avg: 0";
 
-    // Добавьте эту переменную перед циклом рендеринга
+    // Дбавьте эту переменную перед циклом рендеринга
     double fps = 0.0;
 
     // В функции main() после инициализации OpenGL добавьте:
@@ -435,27 +568,57 @@ int main()
         if (currentTime - lastTime >= 1.0) { // Если прошла 1 секунда
             fps = static_cast<double>(nbFrames) / (currentTime - lastTime);
             
-            if (isFirstMeasurement) {
-                fpsEstimate = fps;
-                isFirstMeasurement = false;
-            } else {
-                // Применяем фильтр Калмана
-                fpsEstimate = kalmanFilter(fps, fpsEstimate, fpsErrorEstimate, processNoise, measurementNoise);
+            if (fps > 0) { // Проверяем, что FPS больше 0
+                if (isFirstValidMeasurement) {
+                    fpsEstimate = fps;
+                    isFirstValidMeasurement = false;
+                } else {
+                    // Применяем фильтр Калмана
+                    fpsEstimate = kalmanFilter(fps, fpsEstimate, fpsErrorEstimate, processNoise, measurementNoise);
+                }
+
+                // Обновляем данные графика
+                fpsHistory[currentGraphX] = fps;
+                avgFpsHistory[currentGraphX] = fpsEstimate;
+                currentGraphX = (currentGraphX + 1) % GRAPH_WIDTH;
+
+                // Находим минимальное и максимальное значения FPS в истории
+                minFps = std::numeric_limits<float>::max();
+                maxFps = std::numeric_limits<float>::min();
+                for (float f : fpsHistory) {
+                    if (f > 0) {
+                        minFps = std::min(minFps, f);
+                        maxFps = std::max(maxFps, f);
+                    }
+                }
+                for (float avg : avgFpsHistory) {
+                    if (avg > 0) {
+                        minFps = std::min(minFps, avg);
+                        maxFps = std::max(maxFps, avg);
+                    }
+                }
+
+                // Устанавливаем диапазон графика только если у нас есть действительные данные
+                if (minFps != std::numeric_limits<float>::max() && maxFps != std::numeric_limits<float>::min()) {
+                    float fpsRange = maxFps - minFps;
+                    graphMin = std::max(0.0f, minFps - fpsRange * 0.1f); // 10% запас снизу, но не меньше 0
+                    graphMax = maxFps + fpsRange * 0.1f; // 10% запас сверху
+                }
+
+                // Форматируем строку с текущим и сглаженным FPS
+                std::stringstream ss;
+                ss << "Rubik GPU Benchmark - FPS: " << std::fixed << std::setprecision(2) << fps
+                   << " Avg FPS: " << std::fixed << std::setprecision(2) << fpsEstimate;
+                glfwSetWindowTitle(window, ss.str().c_str());
+
+                // Рассчитываем время от старта программы
+                auto currentTimePoint = std::chrono::steady_clock::now();
+                auto elapsedSeconds = std::chrono::duration_cast<std::chrono::seconds>(currentTimePoint - startTime).count();
+
+                // Изменяем формат вывода в консоль
+                std::cout << "Time: " << elapsedSeconds << "; FPS: " << std::fixed << std::setprecision(2) << fps
+                          << "; AVG: " << std::fixed << std::setprecision(2) << fpsEstimate << std::endl;
             }
-
-            // Форматируем строку с текущим и сглаженным FPS
-            std::stringstream ss;
-            ss << "Rubik GPU Benchmark - FPS: " << std::fixed << std::setprecision(2) << fps
-               << " Avg FPS: " << std::fixed << std::setprecision(2) << fpsEstimate;
-            glfwSetWindowTitle(window, ss.str().c_str());
-
-            // Рассчитываем время от старта программы
-            auto currentTimePoint = std::chrono::steady_clock::now();
-            auto elapsedSeconds = std::chrono::duration_cast<std::chrono::seconds>(currentTimePoint - startTime).count();
-
-            // Изменяем формат вывода в консоль
-            std::cout << "Time: " << elapsedSeconds << "; FPS: " << std::fixed << std::setprecision(2) << fps
-                      << "; AVG: " << std::fixed << std::setprecision(2) << fpsEstimate << std::endl;
 
             nbFrames = 0;
             lastTime = currentTime;
@@ -479,7 +642,7 @@ int main()
         cameraDistance = 5.0f + 2.0f * sin(glfwGetTime() * zoomSpeed);
         cameraDistance = glm::clamp(cameraDistance, minDistance, maxDistance);
 
-        // Создание матриц преобразования
+        // Создае матриц преобразования
         glm::mat4 view = glm::mat4(1.0f);
         glm::mat4 projection = glm::mat4(1.0f);
 
@@ -491,10 +654,10 @@ int main()
         );
         projection = glm::perspective(glm::radians(45.0f), 800.0f / 800.0f, 0.1f, 100.0f);
 
-        // Вращение всего кубика Рубика
+        // Вращение вего кубика Рубика
         glm::mat4 rubiksCubeRotation = glm::rotate(glm::mat4(1.0f), (float)glfwGetTime(), glm::vec3(0.5f, 1.0f, 0.0f));
 
-        // Передача матриц вида и проекции в шейдер
+        // Передача матриц ида и проекции в шейдер
         unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
         unsigned int projectionLoc = glGetUniformLocation(shaderProgram, "projection");
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
@@ -523,6 +686,10 @@ int main()
             }
         }
 
+        // В главном цикле рендеринга, перед отрисовкой граика:
+        glDisable(GL_DEPTH_TEST);
+        glUseProgram(shaderProgram);
+
         // Перед рендерингом текста
         glDisable(GL_DEPTH_TEST);
 
@@ -530,14 +697,124 @@ int main()
         glm::mat4 textProjection = glm::ortho(0.0f, 800.0f, 0.0f, 800.0f);
         glUseProgram(textShaderProgram);
         glUniformMatrix4fv(glGetUniformLocation(textShaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(textProjection));
-        std::string benchmarkName = "Rubik GPU Benchmark";
-        // Удалите или закомментируйте эту строку:
-        // renderText(benchmarkName, 10, 770, 0.5f, glm::vec3(1.0f, 1.0f, 1.0f)); // Белый цвет
-        renderText(gpuName, 10, 770, 0.5f, glm::vec3(1.0f, 1.0f, 0.0f)); // Желтый цвет
-        renderText(fpsText, 10, 730, 0.5f, glm::vec3(1.0f, 0.0f, 0.0f)); // Красный цвет
-        renderText(avgFpsText, 10, 690, 0.5f, glm::vec3(0.0f, 1.0f, 0.0f)); // Зеленый цвет
 
-        // После рендеринга текста
+        // Рндеринг FPS и AVG FPS в правом нижнем углу
+        float fpsScale = 0.5f;
+        float fpsTextWidth = getTextWidth(fpsText, fpsScale);
+        float avgFpsTextWidth = getTextWidth(avgFpsText, fpsScale);
+        float maxFpsWidth = std::max(fpsTextWidth, avgFpsTextWidth);
+        float fpsX = 790.0f - maxFpsWidth;
+        renderText(fpsText, fpsX, 40, fpsScale, glm::vec3(1.0f, 0.0f, 0.0f)); // Красный цвет
+        renderText(avgFpsText, fpsX, 10, fpsScale, glm::vec3(0.0f, 1.0f, 0.0f)); // Зеленый цвет
+
+        // Рендеринг имени GPU вверху по центру
+        float gpuScale = 0.5f;
+        float maxWidth = 780.0f; // Оставляем небольшой отсуп по краям
+        while (getTextWidth(gpuName, gpuScale) > maxWidth) {
+            gpuScale *= 0.9f;
+        }
+        float gpuNameWidth = getTextWidth(gpuName, gpuScale);
+        float gpuNameX = (800.0f - gpuNameWidth) / 2.0f;
+        renderText(gpuName, gpuNameX, 770, gpuScale, glm::vec3(1.0f, 1.0f, 0.0f)); // Желтый цвет
+
+        // После рендеринга текст
+        glEnable(GL_DEPTH_TEST);
+
+        // В главном цикле рендеринга замените код обновления и отрисовки графика на следующий:
+
+        // Обновление данных графика
+        if (currentTime - lastGraphUpdateTime >= 1.0) { // Обновляем график раз в секунду
+            fpsHistory[currentGraphX] = fps;
+            avgFpsHistory[currentGraphX] = fpsEstimate;
+            currentGraphX = (currentGraphX + 1) % GRAPH_WIDTH;
+
+            // Находим минимальное и максимальное значения FPS в истории
+            minFps = std::numeric_limits<float>::max();
+            maxFps = std::numeric_limits<float>::min();
+            for (float f : fpsHistory) {
+                if (f > 0) {
+                    minFps = std::min(minFps, f);
+                    maxFps = std::max(maxFps, f);
+                }
+            }
+            for (float avg : avgFpsHistory) {
+                if (avg > 0) {
+                    minFps = std::min(minFps, avg);
+                    maxFps = std::max(maxFps, avg);
+                }
+            }
+
+            // Устанавливаем диапазон графика
+            float fpsRange = maxFps - minFps;
+            graphMin = std::max(0.0f, minFps - fpsRange * 0.1f); // 10% запас снизу, но не меньше 0
+            graphMax = maxFps + fpsRange * 0.1f; // 10% запас сверху
+
+            lastGraphUpdateTime = currentTime;
+        }
+
+        // Отрисовка графика
+        glDisable(GL_DEPTH_TEST);
+        glUseProgram(lineShaderProgram);
+        glUniformMatrix4fv(glGetUniformLocation(lineShaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(glm::ortho(0.0f, 800.0f, 0.0f, 800.0f)));
+
+        glBindVertexArray(lineVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, lineVBO);
+
+        glPointSize(2.0f); // Увеличиваем размер точек для лучшей видимости
+
+        // Рисуем текущий FPS (красные точки)
+        glUniform3f(glGetUniformLocation(lineShaderProgram, "color"), 1.0f, 0.0f, 0.0f); // Красный цвет
+        std::vector<float> pointVertices;
+        for (int i = 0; i < GRAPH_WIDTH; i++) {
+            int index = (currentGraphX - GRAPH_WIDTH + i + GRAPH_WIDTH) % GRAPH_WIDTH;
+            if (fpsHistory[index] >= 0) {
+                float x = static_cast<float>(i);
+                float y = GRAPH_BOTTOM + ((fpsHistory[index] - graphMin) / (graphMax - graphMin)) * GRAPH_HEIGHT;
+                pointVertices.push_back(x);
+                pointVertices.push_back(y);
+            }
+        }
+        if (!pointVertices.empty()) {
+            glBufferSubData(GL_ARRAY_BUFFER, 0, pointVertices.size() * sizeof(float), pointVertices.data());
+            glDrawArrays(GL_POINTS, 0, pointVertices.size() / 2);
+        }
+
+        // Рисуем средний FPS (зеленые точки)
+        glUniform3f(glGetUniformLocation(lineShaderProgram, "color"), 0.0f, 1.0f, 0.0f); // Зеленый цвет
+        pointVertices.clear();
+        for (int i = 0; i < GRAPH_WIDTH; i++) {
+            int index = (currentGraphX - GRAPH_WIDTH + i + GRAPH_WIDTH) % GRAPH_WIDTH;
+            if (avgFpsHistory[index] >= 0) {
+                float x = static_cast<float>(i);
+                float y = GRAPH_BOTTOM + ((avgFpsHistory[index] - graphMin) / (graphMax - graphMin)) * GRAPH_HEIGHT;
+                pointVertices.push_back(x);
+                pointVertices.push_back(y);
+            }
+        }
+        if (!pointVertices.empty()) {
+            glBufferSubData(GL_ARRAY_BUFFER, 0, pointVertices.size() * sizeof(float), pointVertices.data());
+            glDrawArrays(GL_POINTS, 0, pointVertices.size() / 2);
+        }
+
+        // Рисуем рамку графика
+        glUniform3f(glGetUniformLocation(lineShaderProgram, "color"), 1.0f, 1.0f, 1.0f); // Белый цвет
+        float frameVertices[] = {
+            0, GRAPH_BOTTOM, GRAPH_WIDTH, GRAPH_BOTTOM,
+            GRAPH_WIDTH, GRAPH_BOTTOM, GRAPH_WIDTH, GRAPH_BOTTOM + GRAPH_HEIGHT,
+            GRAPH_WIDTH, GRAPH_BOTTOM + GRAPH_HEIGHT, 0, GRAPH_BOTTOM + GRAPH_HEIGHT,
+            0, GRAPH_BOTTOM + GRAPH_HEIGHT, 0, GRAPH_BOTTOM
+        };
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(frameVertices), frameVertices);
+        glDrawArrays(GL_LINES, 0, 8);
+
+        glBindVertexArray(0);
+
+        // Добавляем подписи к графику
+        std::string maxFpsLabel = "Max: " + std::to_string(static_cast<int>(graphMax));
+        std::string minFpsLabel = "Min: " + std::to_string(static_cast<int>(graphMin));
+        renderText(maxFpsLabel, GRAPH_WIDTH + 5, GRAPH_BOTTOM + GRAPH_HEIGHT - 20, 0.4f, glm::vec3(1.0f, 1.0f, 1.0f));
+        renderText(minFpsLabel, GRAPH_WIDTH + 5, GRAPH_BOTTOM, 0.4f, glm::vec3(1.0f, 1.0f, 1.0f));
+
         glEnable(GL_DEPTH_TEST);
 
         // Обмен буферов и обрабтка событий GLFW
