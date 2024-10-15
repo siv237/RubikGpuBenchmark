@@ -1,0 +1,28 @@
+name: rgbench
+version: '1.0'
+summary: Rubik's Cube GPU Benchmark
+description: |
+  A GPU benchmark application that renders a rotating Rubik's Cube
+  and measures frames per second.
+
+grade: stable
+confinement: strict
+
+apps:
+  rgbench:
+    command: bin/rgbench
+    extensions: [gnome-3-38]
+    plugs: [opengl, x11, wayland]
+
+parts:
+  rgbench:
+    plugin: cmake
+    source: .
+    build-packages:
+      - libglew-dev
+      - libglfw3-dev
+      - libfreetype6-dev
+    stage-packages:
+      - libglew2.1
+      - libglfw3
+      - libfreetype6
