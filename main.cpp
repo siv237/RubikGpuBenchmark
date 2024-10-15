@@ -319,10 +319,11 @@ void drawLine(float x1, float y1, float x2, float y2, glm::vec3 color, unsigned 
     glDrawArrays(GL_LINES, 0, 2);
 }
 
-// В начале фай добавьте или измените следующие глобальные переменные:
+// В начале файла обновите константы для графика
 const int GRAPH_WIDTH = 550;
 const int GRAPH_HEIGHT = 100;
-const int GRAPH_BOTTOM = 10;
+const int GRAPH_BOTTOM = 50;  // Увеличим отступ снизу
+const int GRAPH_LEFT = 50;    // Добавим отступ слева
 int currentGraphX = 0;
 std::vector<float> fpsHistory(GRAPH_WIDTH, -1.0f);
 std::vector<float> avgFpsHistory(GRAPH_WIDTH, -1.0f);
@@ -372,7 +373,7 @@ int main()
     // Отключаем VSync
     glfwSwapInterval(0);
 
-    // Добавляем переменные для подсчета FPS и фильтра Калмана
+    // Добавляем переменные для подсчета FPS и фильтра Калмна
     double lastTime = glfwGetTime();
     int nbFrames = 0;
     double fpsEstimate = 0.0;
@@ -686,71 +687,7 @@ int main()
             }
         }
 
-        // В главном цикле рендеринга, перед отрисовкой граика:
-        glDisable(GL_DEPTH_TEST);
-        glUseProgram(shaderProgram);
-
-        // Перед рендерингом текста
-        glDisable(GL_DEPTH_TEST);
-
-        // Рендеринг текста
-        glm::mat4 textProjection = glm::ortho(0.0f, 800.0f, 0.0f, 800.0f);
-        glUseProgram(textShaderProgram);
-        glUniformMatrix4fv(glGetUniformLocation(textShaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(textProjection));
-
-        // Рндеринг FPS и AVG FPS в правом нижнем углу
-        float fpsScale = 0.5f;
-        float fpsTextWidth = getTextWidth(fpsText, fpsScale);
-        float avgFpsTextWidth = getTextWidth(avgFpsText, fpsScale);
-        float maxFpsWidth = std::max(fpsTextWidth, avgFpsTextWidth);
-        float fpsX = 790.0f - maxFpsWidth;
-        renderText(fpsText, fpsX, 40, fpsScale, glm::vec3(1.0f, 0.0f, 0.0f)); // Красный цвет
-        renderText(avgFpsText, fpsX, 10, fpsScale, glm::vec3(0.0f, 1.0f, 0.0f)); // Зеленый цвет
-
-        // Рендеринг имени GPU вверху по центру
-        float gpuScale = 0.5f;
-        float maxWidth = 780.0f; // Оставляем небольшой отсуп по краям
-        while (getTextWidth(gpuName, gpuScale) > maxWidth) {
-            gpuScale *= 0.9f;
-        }
-        float gpuNameWidth = getTextWidth(gpuName, gpuScale);
-        float gpuNameX = (800.0f - gpuNameWidth) / 2.0f;
-        renderText(gpuName, gpuNameX, 770, gpuScale, glm::vec3(1.0f, 1.0f, 0.0f)); // Желтый цвет
-
-        // После рендеринга текст
-        glEnable(GL_DEPTH_TEST);
-
-        // В главном цикле рендеринга замените код обновления и отрисовки графика на следующий:
-
-        // Обновление данных графика
-        if (currentTime - lastGraphUpdateTime >= 1.0) { // Обновляем график раз в секунду
-            fpsHistory[currentGraphX] = fps;
-            avgFpsHistory[currentGraphX] = fpsEstimate;
-            currentGraphX = (currentGraphX + 1) % GRAPH_WIDTH;
-
-            // Находим минимальное и максимальное значения FPS в истории
-            minFps = std::numeric_limits<float>::max();
-            maxFps = std::numeric_limits<float>::min();
-            for (float f : fpsHistory) {
-                if (f > 0) {
-                    minFps = std::min(minFps, f);
-                    maxFps = std::max(maxFps, f);
-                }
-            }
-            for (float avg : avgFpsHistory) {
-                if (avg > 0) {
-                    minFps = std::min(minFps, avg);
-                    maxFps = std::max(maxFps, avg);
-                }
-            }
-
-            // Устанавливаем диапазон графика
-            float fpsRange = maxFps - minFps;
-            graphMin = std::max(0.0f, minFps - fpsRange * 0.1f); // 10% запас снизу, но не меньше 0
-            graphMax = maxFps + fpsRange * 0.1f; // 10% запас сверху
-
-            lastGraphUpdateTime = currentTime;
-        }
+        // В главном цикле рендеринга замените код отрисовки графика и текста на следующий:
 
         // Отрисовка графика
         glDisable(GL_DEPTH_TEST);
@@ -762,13 +699,24 @@ int main()
 
         glPointSize(2.0f); // Увеличиваем размер точек для лучшей видимости
 
+        // Рисуем рамку графика
+        glUniform3f(glGetUniformLocation(lineShaderProgram, "color"), 1.0f, 1.0f, 1.0f); // Белый цвет
+        float frameVertices[] = {
+            GRAPH_LEFT, GRAPH_BOTTOM, GRAPH_LEFT + GRAPH_WIDTH, GRAPH_BOTTOM,
+            GRAPH_LEFT + GRAPH_WIDTH, GRAPH_BOTTOM, GRAPH_LEFT + GRAPH_WIDTH, GRAPH_BOTTOM + GRAPH_HEIGHT,
+            GRAPH_LEFT + GRAPH_WIDTH, GRAPH_BOTTOM + GRAPH_HEIGHT, GRAPH_LEFT, GRAPH_BOTTOM + GRAPH_HEIGHT,
+            GRAPH_LEFT, GRAPH_BOTTOM + GRAPH_HEIGHT, GRAPH_LEFT, GRAPH_BOTTOM
+        };
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(frameVertices), frameVertices);
+        glDrawArrays(GL_LINES, 0, 8);
+
         // Рисуем текущий FPS (красные точки)
         glUniform3f(glGetUniformLocation(lineShaderProgram, "color"), 1.0f, 0.0f, 0.0f); // Красный цвет
         std::vector<float> pointVertices;
         for (int i = 0; i < GRAPH_WIDTH; i++) {
             int index = (currentGraphX - GRAPH_WIDTH + i + GRAPH_WIDTH) % GRAPH_WIDTH;
             if (fpsHistory[index] >= 0) {
-                float x = static_cast<float>(i);
+                float x = GRAPH_LEFT + static_cast<float>(i);
                 float y = GRAPH_BOTTOM + ((fpsHistory[index] - graphMin) / (graphMax - graphMin)) * GRAPH_HEIGHT;
                 pointVertices.push_back(x);
                 pointVertices.push_back(y);
@@ -785,7 +733,7 @@ int main()
         for (int i = 0; i < GRAPH_WIDTH; i++) {
             int index = (currentGraphX - GRAPH_WIDTH + i + GRAPH_WIDTH) % GRAPH_WIDTH;
             if (avgFpsHistory[index] >= 0) {
-                float x = static_cast<float>(i);
+                float x = GRAPH_LEFT + static_cast<float>(i);
                 float y = GRAPH_BOTTOM + ((avgFpsHistory[index] - graphMin) / (graphMax - graphMin)) * GRAPH_HEIGHT;
                 pointVertices.push_back(x);
                 pointVertices.push_back(y);
@@ -796,24 +744,49 @@ int main()
             glDrawArrays(GL_POINTS, 0, pointVertices.size() / 2);
         }
 
-        // Рисуем рамку графика
-        glUniform3f(glGetUniformLocation(lineShaderProgram, "color"), 1.0f, 1.0f, 1.0f); // Белый цвет
-        float frameVertices[] = {
-            0, GRAPH_BOTTOM, GRAPH_WIDTH, GRAPH_BOTTOM,
-            GRAPH_WIDTH, GRAPH_BOTTOM, GRAPH_WIDTH, GRAPH_BOTTOM + GRAPH_HEIGHT,
-            GRAPH_WIDTH, GRAPH_BOTTOM + GRAPH_HEIGHT, 0, GRAPH_BOTTOM + GRAPH_HEIGHT,
-            0, GRAPH_BOTTOM + GRAPH_HEIGHT, 0, GRAPH_BOTTOM
-        };
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(frameVertices), frameVertices);
-        glDrawArrays(GL_LINES, 0, 8);
-
         glBindVertexArray(0);
+
+        // Рендеринг текста
+        glUseProgram(textShaderProgram);
+        glUniformMatrix4fv(glGetUniformLocation(textShaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(glm::ortho(0.0f, 800.0f, 0.0f, 800.0f)));
+
+        // В функции main(), замените код рендеринга FPS и AVG FPS на следующий:
+
+        // Рендеринг FPS и AVG FPS в левом верхнем углу над графиком
+        float fpsScale = 0.5f;
+        float labelWidth = 60.0f; // Увеличим ширину для меток
+        float valueWidth = 100.0f; // Фиксированная ширина для значений
+
+        std::string fpsLabel = "FPS:";
+        std::string avgLabel = "Avg:";
+
+        renderText(fpsLabel, GRAPH_LEFT, GRAPH_BOTTOM + GRAPH_HEIGHT + 30, fpsScale, glm::vec3(1.0f, 1.0f, 1.0f)); // Белый цвет
+        renderText(avgLabel, GRAPH_LEFT, GRAPH_BOTTOM + GRAPH_HEIGHT + 10, fpsScale, glm::vec3(1.0f, 1.0f, 1.0f)); // Белый цвет
+
+        // Обновляем значения FPS и AVG FPS
+        fpsStream.str("");
+        avgFpsStream.str("");
+        fpsStream << std::fixed << std::setprecision(2) << fps;
+        avgFpsStream << std::fixed << std::setprecision(2) << fpsEstimate;
+
+        renderText(fpsStream.str(), GRAPH_LEFT + labelWidth, GRAPH_BOTTOM + GRAPH_HEIGHT + 30, fpsScale, glm::vec3(1.0f, 0.0f, 0.0f)); // Красный цвет
+        renderText(avgFpsStream.str(), GRAPH_LEFT + labelWidth, GRAPH_BOTTOM + GRAPH_HEIGHT + 10, fpsScale, glm::vec3(0.0f, 1.0f, 0.0f)); // Зеленый цвет
 
         // Добавляем подписи к графику
         std::string maxFpsLabel = "Max: " + std::to_string(static_cast<int>(graphMax));
         std::string minFpsLabel = "Min: " + std::to_string(static_cast<int>(graphMin));
-        renderText(maxFpsLabel, GRAPH_WIDTH + 5, GRAPH_BOTTOM + GRAPH_HEIGHT - 20, 0.4f, glm::vec3(1.0f, 1.0f, 1.0f));
-        renderText(minFpsLabel, GRAPH_WIDTH + 5, GRAPH_BOTTOM, 0.4f, glm::vec3(1.0f, 1.0f, 1.0f));
+        renderText(maxFpsLabel, GRAPH_LEFT + GRAPH_WIDTH + 5, GRAPH_BOTTOM + GRAPH_HEIGHT - 20, 0.4f, glm::vec3(1.0f, 1.0f, 1.0f));
+        renderText(minFpsLabel, GRAPH_LEFT + GRAPH_WIDTH + 5, GRAPH_BOTTOM, 0.4f, glm::vec3(1.0f, 1.0f, 1.0f));
+
+        // Рендеринг имени GPU вверху по центру
+        float gpuScale = 0.5f;
+        float maxWidth = 780.0f; // Оставляем небольшой отступ по краям
+        while (getTextWidth(gpuName, gpuScale) > maxWidth) {
+            gpuScale *= 0.9f;
+        }
+        float gpuNameWidth = getTextWidth(gpuName, gpuScale);
+        float gpuNameX = (800.0f - gpuNameWidth) / 2.0f;
+        renderText(gpuName, gpuNameX, 770, gpuScale, glm::vec3(1.0f, 1.0f, 0.0f)); // Желтый цвет
 
         glEnable(GL_DEPTH_TEST);
 
