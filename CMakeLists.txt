@@ -1,3 +1,5 @@
+set(CMAKE_INSTALL_PREFIX "/usr")
+
 set(CMAKE_C_COMPILER gcc)
 set(CMAKE_CXX_COMPILER g++)
 
@@ -27,3 +29,8 @@ target_link_libraries(${PROJECT_NAME}
 
 # Устанавливаем имя исполняемого файла
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "rgbench")
+
+# Добавляем цель install
+install(TARGETS ${PROJECT_NAME}
+    RUNTIME DESTINATION bin
+)
