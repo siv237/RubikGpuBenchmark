@@ -27,7 +27,7 @@
 					[
 						0
 					],
-					"name" : "GPUTest",
+					"name" : "RGBench",
 					"targetIndexes" : 
 					[
 						0
@@ -38,9 +38,9 @@
 			[
 				{
 					"directoryIndex" : 0,
-					"id" : "GPUTest::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-GPUTest-Debug-617a4535ff7a9b522744.json",
-					"name" : "GPUTest",
+					"id" : "RGBench::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-RGBench-Debug-09dd7d269b6f77062a5e.json",
+					"name" : "RGBench",
 					"projectIndex" : 0
 				}
 			]

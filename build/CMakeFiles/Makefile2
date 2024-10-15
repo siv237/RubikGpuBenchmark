@@ -63,7 +63,7 @@ CMAKE_BINARY_DIR = /home/siv/proj/proj1/build
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
-all: CMakeFiles/GPUTest.dir/all
+all: CMakeFiles/RGBench.dir/all
 .PHONY : all
 
 # The main recursive "preinstall" target.
@@ -71,34 +71,34 @@ preinstall:
 .PHONY : preinstall
 
 # The main recursive "clean" target.
-clean: CMakeFiles/GPUTest.dir/clean
+clean: CMakeFiles/RGBench.dir/clean
 .PHONY : clean
 
 #=============================================================================
-# Target rules for target CMakeFiles/GPUTest.dir
+# Target rules for target CMakeFiles/RGBench.dir
 
 # All Build rule for target.
-CMakeFiles/GPUTest.dir/all:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/GPUTest.dir/build.make CMakeFiles/GPUTest.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/GPUTest.dir/build.make CMakeFiles/GPUTest.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/siv/proj/proj1/build/CMakeFiles --progress-num=1,2 "Built target GPUTest"
-.PHONY : CMakeFiles/GPUTest.dir/all
+CMakeFiles/RGBench.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/RGBench.dir/build.make CMakeFiles/RGBench.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/RGBench.dir/build.make CMakeFiles/RGBench.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/siv/proj/proj1/build/CMakeFiles --progress-num=1,2 "Built target RGBench"
+.PHONY : CMakeFiles/RGBench.dir/all
 
 # Build rule for subdir invocation for target.
-CMakeFiles/GPUTest.dir/rule: cmake_check_build_system
+CMakeFiles/RGBench.dir/rule: cmake_check_build_system
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/siv/proj/proj1/build/CMakeFiles 2
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/GPUTest.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/RGBench.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/siv/proj/proj1/build/CMakeFiles 0
-.PHONY : CMakeFiles/GPUTest.dir/rule
+.PHONY : CMakeFiles/RGBench.dir/rule
 
 # Convenience name for target.
-GPUTest: CMakeFiles/GPUTest.dir/rule
-.PHONY : GPUTest
+RGBench: CMakeFiles/RGBench.dir/rule
+.PHONY : RGBench
 
 # clean rule for target.
-CMakeFiles/GPUTest.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/GPUTest.dir/build.make CMakeFiles/GPUTest.dir/clean
-.PHONY : CMakeFiles/GPUTest.dir/clean
+CMakeFiles/RGBench.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/RGBench.dir/build.make CMakeFiles/RGBench.dir/clean
+.PHONY : CMakeFiles/RGBench.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

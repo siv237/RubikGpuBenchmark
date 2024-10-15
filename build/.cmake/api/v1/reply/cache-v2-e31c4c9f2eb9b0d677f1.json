@@ -39,7 +39,7 @@
 			[
 				{
 					"name" : "HELPSTRING",
-					"value" : "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel ..."
+					"value" : "No help, variable specified on the command line."
 				}
 			],
 			"type" : "STRING",
@@ -514,16 +514,12 @@
 			"properties" : 
 			[
 				{
-					"name" : "ADVANCED",
-					"value" : "1"
-				},
-				{
 					"name" : "HELPSTRING",
-					"value" : "Enable/Disable output of compile commands during generation."
+					"value" : "No help, variable specified on the command line."
 				}
 			],
 			"type" : "BOOL",
-			"value" : ""
+			"value" : "TRUE"
 		},
 		{
 			"name" : "CMAKE_EXTRA_GENERATOR",
@@ -839,7 +835,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "GPUTest"
+			"value" : "RGBench"
 		},
 		{
 			"name" : "CMAKE_RANLIB",
@@ -1314,42 +1310,6 @@
 			"value" : "/usr/lib/x86_64-linux-gnu/libGLEW.a"
 		},
 		{
-			"name" : "GPUTest_BINARY_DIR",
-			"properties" : 
-			[
-				{
-					"name" : "HELPSTRING",
-					"value" : "Value Computed by CMake"
-				}
-			],
-			"type" : "STATIC",
-			"value" : "/home/siv/proj/proj1/build"
-		},
-		{
-			"name" : "GPUTest_IS_TOP_LEVEL",
-			"properties" : 
-			[
-				{
-					"name" : "HELPSTRING",
-					"value" : "Value Computed by CMake"
-				}
-			],
-			"type" : "STATIC",
-			"value" : "ON"
-		},
-		{
-			"name" : "GPUTest_SOURCE_DIR",
-			"properties" : 
-			[
-				{
-					"name" : "HELPSTRING",
-					"value" : "Value Computed by CMake"
-				}
-			],
-			"type" : "STATIC",
-			"value" : "/home/siv/proj/proj1"
-		},
-		{
 			"name" : "OPENGL_EGL_INCLUDE_DIR",
 			"properties" : 
 			[
@@ -1411,7 +1371,7 @@
 				}
 			],
 			"type" : "FILEPATH",
-			"value" : "/tmp/.mount_cursorOTeOfQ/libEGL.so"
+			"value" : "/tmp/.mount_cursorMT8wJt/libEGL.so"
 		},
 		{
 			"name" : "OPENGL_gl_LIBRARY",
@@ -1492,6 +1452,42 @@
 			],
 			"type" : "PATH",
 			"value" : "OPENGL_xmesa_INCLUDE_DIR-NOTFOUND"
+		},
+		{
+			"name" : "RGBench_BINARY_DIR",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Value Computed by CMake"
+				}
+			],
+			"type" : "STATIC",
+			"value" : "/home/siv/proj/proj1/build"
+		},
+		{
+			"name" : "RGBench_IS_TOP_LEVEL",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Value Computed by CMake"
+				}
+			],
+			"type" : "STATIC",
+			"value" : "ON"
+		},
+		{
+			"name" : "RGBench_SOURCE_DIR",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Value Computed by CMake"
+				}
+			],
+			"type" : "STATIC",
+			"value" : "/home/siv/proj/proj1"
 		},
 		{
 			"name" : "glfw3_DIR",

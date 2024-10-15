@@ -13,6 +13,8 @@
 #include <map>
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include <chrono>
+#include <ctime>
 
 struct Character {
     unsigned int TextureID;
@@ -234,6 +236,15 @@ void checkOpenGLError(const char* stmt, const char* fname, int line)
         checkOpenGLError(#stmt, __FILE__, __LINE__); \
     } while (0)
 
+// Добавьте эту функцию перед функцией main()
+std::string getGPUName() {
+    const GLubyte* renderer = glGetString(GL_RENDERER);
+    if (renderer) {
+        return std::string(reinterpret_cast<const char*>(renderer));
+    }
+    return "Неизвестная видеокарта";
+}
+
 int main()
 {
     // Инициализация GLFW
@@ -247,9 +258,12 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    
+    // Добавьте эту строку, чтобы запретить изменение размера окна
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
     // Создание окна
-    GLFWwindow* window = glfwCreateWindow(800, 800, "GPU Test - Rotating Cube", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(800, 800, "Rubik GPU Benchmark", NULL, NULL);
     if (window == NULL)
     {
         std::cerr << "Failed to create GLFW window" << std::endl;
@@ -400,6 +414,18 @@ int main()
     // Добавьте эту переменную перед циклом рендеринга
     double fps = 0.0;
 
+    // В функции main() после инициализации OpenGL добавьте:
+    std::string gpuName = getGPUName();
+
+    // Добавьте эти переменные в начало функции main(), после инициализации GLFW и OpenGL:
+    float cameraDistance = 5.0f;
+    float minDistance = 3.0f;
+    float maxDistance = 7.0f;
+    float zoomSpeed = 0.5f;
+
+    // Добавьте эту строку в начало функции main(), после инициализации GLFW
+    auto startTime = std::chrono::steady_clock::now();
+
     // Главный цикл рендеринга
     while (!glfwWindowShouldClose(window))
     {
@@ -419,9 +445,17 @@ int main()
 
             // Форматируем строку с текущим и сглаженным FPS
             std::stringstream ss;
-            ss << "GPU Test - Rotating Cube - FPS: " << std::fixed << std::setprecision(2) << fps
+            ss << "Rubik GPU Benchmark - FPS: " << std::fixed << std::setprecision(2) << fps
                << " Avg FPS: " << std::fixed << std::setprecision(2) << fpsEstimate;
             glfwSetWindowTitle(window, ss.str().c_str());
+
+            // Рассчитываем время от старта программы
+            auto currentTimePoint = std::chrono::steady_clock::now();
+            auto elapsedSeconds = std::chrono::duration_cast<std::chrono::seconds>(currentTimePoint - startTime).count();
+
+            // Изменяем формат вывода в консоль
+            std::cout << "Time: " << elapsedSeconds << "; FPS: " << std::fixed << std::setprecision(2) << fps
+                      << "; AVG: " << std::fixed << std::setprecision(2) << fpsEstimate << std::endl;
 
             nbFrames = 0;
             lastTime = currentTime;
@@ -441,12 +475,20 @@ int main()
         // Активация шейдерной программы
         glUseProgram(shaderProgram);
 
+        // Обновление расстояния камеры
+        cameraDistance = 5.0f + 2.0f * sin(glfwGetTime() * zoomSpeed);
+        cameraDistance = glm::clamp(cameraDistance, minDistance, maxDistance);
+
         // Создание матриц преобразования
         glm::mat4 view = glm::mat4(1.0f);
         glm::mat4 projection = glm::mat4(1.0f);
 
         // Настройка матриц вида и проекции
-        view = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
+        view = glm::lookAt(
+            glm::vec3(0.0f, 0.0f, cameraDistance),
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(0.0f, 1.0f, 0.0f)
+        );
         projection = glm::perspective(glm::radians(45.0f), 800.0f / 800.0f, 0.1f, 100.0f);
 
         // Вращение всего кубика Рубика
@@ -488,19 +530,23 @@ int main()
         glm::mat4 textProjection = glm::ortho(0.0f, 800.0f, 0.0f, 800.0f);
         glUseProgram(textShaderProgram);
         glUniformMatrix4fv(glGetUniformLocation(textShaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(textProjection));
-        renderText(fpsText, 10, 770, 0.5f, glm::vec3(1.0f, 0.0f, 0.0f)); // Красный цвет
-        renderText(avgFpsText, 10, 730, 0.5f, glm::vec3(0.0f, 1.0f, 0.0f)); // Зеленый цвет
+        std::string benchmarkName = "Rubik GPU Benchmark";
+        // Удалите или закомментируйте эту строку:
+        // renderText(benchmarkName, 10, 770, 0.5f, glm::vec3(1.0f, 1.0f, 1.0f)); // Белый цвет
+        renderText(gpuName, 10, 770, 0.5f, glm::vec3(1.0f, 1.0f, 0.0f)); // Желтый цвет
+        renderText(fpsText, 10, 730, 0.5f, glm::vec3(1.0f, 0.0f, 0.0f)); // Красный цвет
+        renderText(avgFpsText, 10, 690, 0.5f, glm::vec3(0.0f, 1.0f, 0.0f)); // Зеленый цвет
 
         // После рендеринга текста
         glEnable(GL_DEPTH_TEST);
 
-        // Обмен буферов и обработка событий GLFW
+        // Обмен буферов и обрабтка событий GLFW
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
     // Выводим сглаженное значение FPS в консоль перед завершением программы
-    // Удалите или закомментируйте эту строку
+    // Удлите или закомментируйте эту строку
     // std::cout << "Smoothed Average FPS: " << std::fixed << std::setprecision(2) << fpsEstimate << std::endl;
 
     // Очистка ресурсов

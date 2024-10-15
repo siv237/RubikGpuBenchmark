@@ -2,7 +2,7 @@
 	"artifacts" : 
 	[
 		{
-			"path" : "GPUTest"
+			"path" : "rgbench"
 		}
 	],
 	"backtrace" : 1,
@@ -26,19 +26,19 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 15,
+				"line" : 16,
 				"parent" : 0
 			},
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 19,
+				"line" : 20,
 				"parent" : 0
 			},
 			{
 				"command" : 2,
 				"file" : 0,
-				"line" : 17,
+				"line" : 18,
 				"parent" : 0
 			}
 		]
@@ -52,7 +52,7 @@
 					"fragment" : "-g"
 				},
 				{
-					"fragment" : "-std=gnu++11"
+					"fragment" : "-std=gnu++17"
 				}
 			],
 			"includes" : 
@@ -74,7 +74,7 @@
 				[
 					1
 				],
-				"standard" : "11"
+				"standard" : "17"
 			},
 			"sourceIndexes" : 
 			[
@@ -82,7 +82,7 @@
 			]
 		}
 	],
-	"id" : "GPUTest::@6890427a1f51a3e7e1df",
+	"id" : "RGBench::@6890427a1f51a3e7e1df",
 	"link" : 
 	{
 		"commandFragments" : 
@@ -118,8 +118,8 @@
 		],
 		"language" : "CXX"
 	},
-	"name" : "GPUTest",
-	"nameOnDisk" : "GPUTest",
+	"name" : "RGBench",
+	"nameOnDisk" : "rgbench",
 	"paths" : 
 	{
 		"build" : ".",

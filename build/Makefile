@@ -117,24 +117,24 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named GPUTest
+# Target rules for targets named RGBench
 
 # Build rule for target.
-GPUTest: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 GPUTest
-.PHONY : GPUTest
+RGBench: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 RGBench
+.PHONY : RGBench
 
 # fast build rule for target.
-GPUTest/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/GPUTest.dir/build.make CMakeFiles/GPUTest.dir/build
-.PHONY : GPUTest/fast
+RGBench/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/RGBench.dir/build.make CMakeFiles/RGBench.dir/build
+.PHONY : RGBench/fast
 
 main.o: main.cpp.o
 .PHONY : main.o
 
 # target to build an object file
 main.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/GPUTest.dir/build.make CMakeFiles/GPUTest.dir/main.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/RGBench.dir/build.make CMakeFiles/RGBench.dir/main.cpp.o
 .PHONY : main.cpp.o
 
 main.i: main.cpp.i
@@ -142,7 +142,7 @@ main.i: main.cpp.i
 
 # target to preprocess a source file
 main.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/GPUTest.dir/build.make CMakeFiles/GPUTest.dir/main.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/RGBench.dir/build.make CMakeFiles/RGBench.dir/main.cpp.i
 .PHONY : main.cpp.i
 
 main.s: main.cpp.s
@@ -150,7 +150,7 @@ main.s: main.cpp.s
 
 # target to generate assembly for a file
 main.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/GPUTest.dir/build.make CMakeFiles/GPUTest.dir/main.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/RGBench.dir/build.make CMakeFiles/RGBench.dir/main.cpp.s
 .PHONY : main.cpp.s
 
 # Help Target
@@ -161,7 +161,7 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... GPUTest"
+	@echo "... RGBench"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"

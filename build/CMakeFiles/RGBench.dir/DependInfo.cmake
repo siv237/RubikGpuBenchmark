@@ -8,7 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/siv/proj/proj1/main.cpp" "CMakeFiles/GPUTest.dir/main.cpp.o" "gcc" "CMakeFiles/GPUTest.dir/main.cpp.o.d"
+  "/home/siv/proj/proj1/main.cpp" "CMakeFiles/RGBench.dir/main.cpp.o" "gcc" "CMakeFiles/RGBench.dir/main.cpp.o.d"
   )
 
 # Targets to which this target links.
