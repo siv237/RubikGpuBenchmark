@@ -10,12 +10,16 @@ find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
+find_package(Freetype REQUIRED)
 
 add_executable(GPUTest main.cpp)
+
+target_include_directories(GPUTest PRIVATE ${FREETYPE_INCLUDE_DIRS})
 
 target_link_libraries(GPUTest
     OpenGL::GL
     GLEW::GLEW
     glfw
     glm::glm
+    ${FREETYPE_LIBRARIES}
 )

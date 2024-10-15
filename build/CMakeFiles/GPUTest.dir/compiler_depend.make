@@ -414,8 +414,62 @@ CMakeFiles/GPUTest.dir/main.cpp.o: ../main.cpp \
   /usr/include/c++/11/bits/uses_allocator.h \
   /usr/include/c++/11/bits/invoke.h \
   /usr/include/c++/11/sstream \
-  /usr/include/c++/11/bits/sstream.tcc
+  /usr/include/c++/11/bits/sstream.tcc \
+  /usr/include/c++/11/vector \
+  /usr/include/c++/11/bits/stl_uninitialized.h \
+  /usr/include/c++/11/bits/stl_vector.h \
+  /usr/include/c++/11/bits/stl_bvector.h \
+  /usr/include/c++/11/bits/vector.tcc \
+  /usr/include/c++/11/map \
+  /usr/include/c++/11/bits/stl_tree.h \
+  /usr/include/c++/11/ext/aligned_buffer.h \
+  /usr/include/c++/11/bits/stl_map.h \
+  /usr/include/c++/11/bits/stl_multimap.h \
+  /usr/include/c++/11/bits/erase_if.h \
+  /usr/include/freetype2/ft2build.h \
+  /usr/include/freetype2/freetype/config/ftheader.h \
+  /usr/include/freetype2/freetype/freetype.h \
+  /usr/include/freetype2/freetype/config/ftconfig.h \
+  /usr/include/freetype2/freetype/config/ftoption.h \
+  /usr/include/freetype2/freetype/config/ftstdlib.h \
+  /usr/include/c++/11/stdlib.h \
+  /usr/include/setjmp.h \
+  /usr/include/freetype2/freetype/config/integer-types.h \
+  /usr/include/freetype2/freetype/config/public-macros.h \
+  /usr/include/freetype2/freetype/config/mac-support.h \
+  /usr/include/freetype2/freetype/fttypes.h \
+  /usr/include/freetype2/freetype/ftsystem.h \
+  /usr/include/freetype2/freetype/ftimage.h \
+  /usr/include/freetype2/freetype/fterrors.h \
+  /usr/include/freetype2/freetype/ftmoderr.h \
+  /usr/include/freetype2/freetype/fterrdef.h
 
+
+/usr/include/freetype2/freetype/ftmoderr.h:
+
+/usr/include/freetype2/freetype/ftsystem.h:
+
+/usr/include/freetype2/freetype/config/mac-support.h:
+
+/usr/include/freetype2/freetype/config/public-macros.h:
+
+/usr/include/freetype2/freetype/config/integer-types.h:
+
+/usr/include/setjmp.h:
+
+/usr/include/freetype2/freetype/config/ftstdlib.h:
+
+/usr/include/freetype2/freetype/config/ftheader.h:
+
+/usr/include/c++/11/bits/stl_map.h:
+
+/usr/include/c++/11/bits/stl_tree.h:
+
+/usr/include/c++/11/map:
+
+/usr/include/c++/11/bits/stl_uninitialized.h:
+
+/usr/include/c++/11/vector:
 
 /usr/include/c++/11/sstream:
 
@@ -424,6 +478,8 @@ CMakeFiles/GPUTest.dir/main.cpp.o: ../main.cpp \
 /usr/include/c++/11/bits/uses_allocator.h:
 
 /usr/include/c++/11/tuple:
+
+/usr/include/freetype2/freetype/config/ftoption.h:
 
 /usr/include/c++/11/bits/unique_ptr.h:
 
@@ -460,6 +516,8 @@ CMakeFiles/GPUTest.dir/main.cpp.o: ../main.cpp \
 /usr/include/c++/11/bits/basic_ios.h:
 
 /usr/include/c++/11/streambuf:
+
+/usr/include/freetype2/freetype/config/ftconfig.h:
 
 /usr/include/c++/11/system_error:
 
@@ -651,9 +709,13 @@ CMakeFiles/GPUTest.dir/main.cpp.o: ../main.cpp \
 
 /usr/include/glm/ext/vector_int2_sized.hpp:
 
+/usr/include/c++/11/bits/vector.tcc:
+
 /usr/include/glm/ext/matrix_double2x3.hpp:
 
 /usr/include/glm/ext/vector_double2_precision.hpp:
+
+/usr/include/c++/11/stdlib.h:
 
 /usr/include/glm/ext/vector_bool2_precision.hpp:
 
@@ -781,6 +843,8 @@ CMakeFiles/GPUTest.dir/main.cpp.o: ../main.cpp \
 
 /usr/include/glm/ext/matrix_float4x4.hpp:
 
+/usr/include/freetype2/freetype/fterrdef.h:
+
 /usr/include/c++/11/ext/type_traits.h:
 
 /usr/include/glm/ext/matrix_float2x2.hpp:
@@ -827,7 +891,11 @@ CMakeFiles/GPUTest.dir/main.cpp.o: ../main.cpp \
 
 /usr/include/x86_64-linux-gnu/bits/timesize.h:
 
+/usr/include/freetype2/freetype/fterrors.h:
+
 /usr/include/x86_64-linux-gnu/bits/types/__sigset_t.h:
+
+/usr/include/c++/11/bits/stl_multimap.h:
 
 ../main.cpp:
 
@@ -836,6 +904,8 @@ CMakeFiles/GPUTest.dir/main.cpp.o: ../main.cpp \
 /usr/include/glm/ext/vector_double2.hpp:
 
 /usr/include/x86_64-linux-gnu/bits/byteswap.h:
+
+/usr/include/c++/11/bits/stl_vector.h:
 
 /usr/include/c++/11/cstddef:
 
@@ -846,6 +916,8 @@ CMakeFiles/GPUTest.dir/main.cpp.o: ../main.cpp \
 /usr/include/c++/11/string:
 
 /usr/include/x86_64-linux-gnu/bits/uio_lim.h:
+
+/usr/include/c++/11/bits/erase_if.h:
 
 /usr/include/c++/11/bits/ptr_traits.h:
 
@@ -885,9 +957,13 @@ CMakeFiles/GPUTest.dir/main.cpp.o: ../main.cpp \
 
 /usr/include/glm/ext/matrix_double4x2.hpp:
 
+/usr/include/c++/11/bits/stl_bvector.h:
+
 /usr/include/x86_64-linux-gnu/bits/types/struct___jmp_buf_tag.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/clockid_t.h:
+
+/usr/include/freetype2/ft2build.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/struct_FILE.h:
 
@@ -912,6 +988,8 @@ CMakeFiles/GPUTest.dir/main.cpp.o: ../main.cpp \
 /usr/include/glm/ext/vector_float3.hpp:
 
 /usr/include/x86_64-linux-gnu/bits/types/struct_timespec.h:
+
+/usr/include/freetype2/freetype/freetype.h:
 
 /usr/include/glm/ext/vector_float4.hpp:
 
@@ -947,6 +1025,8 @@ CMakeFiles/GPUTest.dir/main.cpp.o: ../main.cpp \
 
 /usr/include/glm/exponential.hpp:
 
+/usr/include/c++/11/ext/aligned_buffer.h:
+
 /usr/include/x86_64-linux-gnu/sys/types.h:
 
 /usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h:
@@ -979,6 +1059,8 @@ CMakeFiles/GPUTest.dir/main.cpp.o: ../main.cpp \
 
 /usr/include/glm/ext/vector_int4_sized.hpp:
 
+/usr/include/freetype2/freetype/ftimage.h:
+
 /usr/include/c++/11/bits/exception_defines.h:
 
 /usr/include/x86_64-linux-gnu/c++/11/bits/os_defines.h:
@@ -990,6 +1072,8 @@ CMakeFiles/GPUTest.dir/main.cpp.o: ../main.cpp \
 /usr/include/glm/mat2x2.hpp:
 
 /usr/include/glm/detail/type_mat2x2.inl:
+
+/usr/include/freetype2/freetype/fttypes.h:
 
 /usr/include/glm/detail/type_mat2x2.hpp:
 

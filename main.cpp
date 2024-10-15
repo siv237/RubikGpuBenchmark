@@ -7,6 +7,23 @@
 #include <string>
 #include <iomanip> // Для форматирования вывода
 #include <sstream>
+#include <vector>
+#include <utility>
+#include <cmath>
+#include <map>
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
+struct Character {
+    unsigned int TextureID;
+    glm::ivec2   Size;
+    glm::ivec2   Bearing;
+    unsigned int Advance;
+};
+
+std::map<char, Character> Characters;
+unsigned int textVAO, textVBO;
+unsigned int textShaderProgram;
 
 const char* vertexShaderSource = R"(
     #version 330 core
@@ -33,6 +50,31 @@ const char* fragmentShaderSource = R"(
     }
 )";
 
+const char* textVertexShaderSource = R"(
+    #version 330 core
+    layout (location = 0) in vec4 vertex; // <vec2 pos, vec2 tex>
+    out vec2 TexCoords;
+    uniform mat4 projection;
+    void main()
+    {
+        gl_Position = projection * vec4(vertex.xy, 0.0, 1.0);
+        TexCoords = vertex.zw;
+    }
+)";
+
+const char* textFragmentShaderSource = R"(
+    #version 330 core
+    in vec2 TexCoords;
+    out vec4 color;
+    uniform sampler2D text;
+    uniform vec3 textColor;
+    void main()
+    {    
+        vec4 sampled = vec4(1.0, 1.0, 1.0, texture(text, TexCoords).r);
+        color = vec4(textColor, 1.0) * sampled;
+    }
+)";
+
 // Функция для фильтра Калмана
 double kalmanFilter(double measurement, double& estimate, double& errorEstimate, double processNoise, double measurementNoise) {
     // Предсказание
@@ -46,6 +88,151 @@ double kalmanFilter(double measurement, double& estimate, double& errorEstimate,
 
     return estimate;
 }
+
+void loadFont()
+{
+    FT_Library ft;
+    if (FT_Init_FreeType(&ft))
+    {
+        std::cout << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
+        return;
+    }
+
+    FT_Face face;
+    if (FT_New_Face(ft, "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf", 0, &face))
+    {
+        std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
+        return;
+    }
+
+    FT_Set_Pixel_Sizes(face, 0, 48); // Увеличено с 24 до 48
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+    for (unsigned char c = 0; c < 128; c++)
+    {
+        if (FT_Load_Char(face, c, FT_LOAD_RENDER))
+        {
+            std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
+            continue;
+        }
+
+        unsigned int texture;
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexImage2D(
+            GL_TEXTURE_2D,
+            0,
+            GL_RED,
+            face->glyph->bitmap.width,
+            face->glyph->bitmap.rows,
+            0,
+            GL_RED,
+            GL_UNSIGNED_BYTE,
+            face->glyph->bitmap.buffer
+        );
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        Character character = {
+            texture,
+            glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
+            glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
+            static_cast<unsigned int>(face->glyph->advance.x)
+        };
+        Characters.insert(std::pair<char, Character>(c, character));
+
+        // Удалите или закомментируйте эту строку
+        // std::cout << "Loaded character " << c << " with size " << face->glyph->bitmap.width << "x" << face->glyph->bitmap.rows << std::endl;
+    }
+
+    FT_Done_Face(face);
+    FT_Done_FreeType(ft);
+}
+
+void renderText(const std::string& text, float x, float y, float scale, glm::vec3 color)
+{
+    glUseProgram(textShaderProgram);
+    glUniform3f(glGetUniformLocation(textShaderProgram, "textColor"), color.x, color.y, color.z);
+    glActiveTexture(GL_TEXTURE0);
+    glBindVertexArray(textVAO);
+
+    for (char c : text)
+    {
+        Character ch = Characters[c];
+        
+        float xpos = x + ch.Bearing.x * scale;
+        float ypos = y - (ch.Size.y - ch.Bearing.y) * scale;
+
+        float w = ch.Size.x * scale;
+        float h = ch.Size.y * scale;
+
+        float vertices[6][4] = {
+            { xpos,     ypos + h,   0.0f, 0.0f },
+            { xpos,     ypos,       0.0f, 1.0f },
+            { xpos + w, ypos,       1.0f, 1.0f },
+
+            { xpos,     ypos + h,   0.0f, 0.0f },
+            { xpos + w, ypos,       1.0f, 1.0f },
+            { xpos + w, ypos + h,   1.0f, 0.0f }
+        };
+
+        glBindTexture(GL_TEXTURE_2D, ch.TextureID);
+        glBindBuffer(GL_ARRAY_BUFFER, textVBO);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        x += (ch.Advance >> 6) * scale;
+    }
+
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void checkShaderCompileErrors(unsigned int shader, std::string type)
+{
+    int success;
+    char infoLog[1024];
+    if (type != "PROGRAM")
+    {
+        glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+        if (!success)
+        {
+            glGetShaderInfoLog(shader, 1024, NULL, infoLog);
+            std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+        }
+    }
+    else
+    {
+        glGetProgramiv(shader, GL_LINK_STATUS, &success);
+        if (!success)
+        {
+            glGetProgramInfoLog(shader, 1024, NULL, infoLog);
+            std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+        }
+    }
+}
+
+// Добавьте эту функцию перед main():
+void checkOpenGLError(const char* stmt, const char* fname, int line)
+{
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR)
+    {
+        printf("OpenGL error %08x, at %s:%i - for %s\n", err, fname, line, stmt);
+        abort();
+    }
+}
+
+// Используйте этот макрос после каждой важной операции OpenGL
+#define GL_CHECK(stmt) do { \
+        stmt; \
+        checkOpenGLError(#stmt, __FILE__, __LINE__); \
+    } while (0)
 
 int main()
 {
@@ -85,27 +272,65 @@ int main()
     double lastTime = glfwGetTime();
     int nbFrames = 0;
     double fpsEstimate = 0.0;
-    double fpsErrorEstimate = 1.0;
-    const double processNoise = 0.01;
-    const double measurementNoise = 200.0;
+    double fpsErrorEstimate = 1000.0;
+    const double processNoise = 0.000001;
+    const double measurementNoise = 36.0;
     bool isFirstMeasurement = true;
 
     // Компиляция шейдеров
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
     glCompileShader(vertexShader);
+    checkShaderCompileErrors(vertexShader, "VERTEX");
 
     unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
     glCompileShader(fragmentShader);
+    checkShaderCompileErrors(fragmentShader, "FRAGMENT");
 
     unsigned int shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertexShader);
     glAttachShader(shaderProgram, fragmentShader);
     glLinkProgram(shaderProgram);
+    checkShaderCompileErrors(shaderProgram, "PROGRAM");
 
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
+
+    loadFont();
+
+    unsigned int textVertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(textVertexShader, 1, &textVertexShaderSource, NULL);
+    glCompileShader(textVertexShader);
+    checkShaderCompileErrors(textVertexShader, "TEXT_VERTEX");
+
+    unsigned int textFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(textFragmentShader, 1, &textFragmentShaderSource, NULL);
+    glCompileShader(textFragmentShader);
+    checkShaderCompileErrors(textFragmentShader, "TEXT_FRAGMENT");
+
+    textShaderProgram = glCreateProgram();
+    glAttachShader(textShaderProgram, textVertexShader);
+    glAttachShader(textShaderProgram, textFragmentShader);
+    glLinkProgram(textShaderProgram);
+    checkShaderCompileErrors(textShaderProgram, "TEXT_PROGRAM");
+
+    glDeleteShader(textVertexShader);
+    glDeleteShader(textFragmentShader);
+
+    glGenVertexArrays(1, &textVAO);
+    glGenBuffers(1, &textVBO);
+    glBindVertexArray(textVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, textVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    // Добавьте это в функцию main() после инициализации OpenGL
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Вершины куба с цветами
     float vertices[] = {
@@ -169,6 +394,12 @@ int main()
 
     glEnable(GL_DEPTH_TEST);
 
+    std::string fpsText = "FPS: 0";
+    std::string avgFpsText = "Avg: 0";
+
+    // Добавьте эту переменную перед циклом рендеринга
+    double fps = 0.0;
+
     // Главный цикл рендеринга
     while (!glfwWindowShouldClose(window))
     {
@@ -176,7 +407,7 @@ int main()
         double currentTime = glfwGetTime();
         nbFrames++;
         if (currentTime - lastTime >= 1.0) { // Если прошла 1 секунда
-            double fps = static_cast<double>(nbFrames) / (currentTime - lastTime);
+            fps = static_cast<double>(nbFrames) / (currentTime - lastTime);
             
             if (isFirstMeasurement) {
                 fpsEstimate = fps;
@@ -195,6 +426,13 @@ int main()
             nbFrames = 0;
             lastTime = currentTime;
         }
+
+        // Обновляем текст FPS каждый кадр
+        std::stringstream fpsStream, avgFpsStream;
+        fpsStream << std::fixed << std::setprecision(2) << fps;
+        avgFpsStream << std::fixed << std::setprecision(2) << fpsEstimate;
+        fpsText = "FPS: " + fpsStream.str();
+        avgFpsText = "Avg: " + avgFpsStream.str();
 
         // Очистка буфера цвета и глубины
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -243,13 +481,27 @@ int main()
             }
         }
 
+        // Перед рендерингом текста
+        glDisable(GL_DEPTH_TEST);
+
+        // Рендеринг текста
+        glm::mat4 textProjection = glm::ortho(0.0f, 800.0f, 0.0f, 800.0f);
+        glUseProgram(textShaderProgram);
+        glUniformMatrix4fv(glGetUniformLocation(textShaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(textProjection));
+        renderText(fpsText, 10, 770, 0.5f, glm::vec3(1.0f, 0.0f, 0.0f)); // Красный цвет
+        renderText(avgFpsText, 10, 730, 0.5f, glm::vec3(0.0f, 1.0f, 0.0f)); // Зеленый цвет
+
+        // После рендеринга текста
+        glEnable(GL_DEPTH_TEST);
+
         // Обмен буферов и обработка событий GLFW
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
     // Выводим сглаженное значение FPS в консоль перед завершением программы
-    std::cout << "Smoothed Average FPS: " << std::fixed << std::setprecision(2) << fpsEstimate << std::endl;
+    // Удалите или закомментируйте эту строку
+    // std::cout << "Smoothed Average FPS: " << std::fixed << std::setprecision(2) << fpsEstimate << std::endl;
 
     // Очистка ресурсов
     glDeleteVertexArrays(1, &VAO);

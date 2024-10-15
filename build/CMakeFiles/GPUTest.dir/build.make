@@ -95,6 +95,7 @@ GPUTest: CMakeFiles/GPUTest.dir/build.make
 GPUTest: /usr/lib/x86_64-linux-gnu/libGL.so
 GPUTest: /usr/lib/x86_64-linux-gnu/libGLEW.so
 GPUTest: /usr/lib/x86_64-linux-gnu/libglfw.so.3.3
+GPUTest: /usr/lib/x86_64-linux-gnu/libfreetype.so
 GPUTest: CMakeFiles/GPUTest.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/siv/proj/proj1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable GPUTest"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/GPUTest.dir/link.txt --verbose=$(VERBOSE)

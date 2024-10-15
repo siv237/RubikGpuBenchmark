@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/g++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -isystem /usr/lib
+CXX_INCLUDES = -I/usr/include/freetype2 -isystem /usr/lib
 
 CXX_FLAGS = -g -std=gnu++11
 
