@@ -293,7 +293,7 @@ std::string getGPUName() {
     if (renderer) {
         return std::string(reinterpret_cast<const char*>(renderer));
     }
-    return "Неизвестная видеокарта";
+    return "Неизвестная видеока��та";
 }
 
 // Добавьте ту функцию перед main():
@@ -439,6 +439,50 @@ std::string getRAMInfo() {
     std::stringstream ss;
     ss << std::fixed << std::setprecision(2) << ram_gb << " GB";
     return "RAM: " + ss.str();
+}
+
+// Добавьте эту функцию перед main()
+GLFWimage createTransparentIcon(const char* filename, int targetSize) {
+    GLFWimage icon = {};
+    int width, height, channels;
+    unsigned char* data = stbi_load(filename, &width, &height, &channels, 4); // Всегда загружаем с альфа-каналом
+
+    if (!data) {
+        std::cerr << "Failed to load icon: " << filename << std::endl;
+        return icon;
+    }
+
+    // Создаем новое изображение с заданным размером и прозрачным фоном
+    icon.width = targetSize;
+    icon.height = targetSize;
+    icon.pixels = new unsigned char[targetSize * targetSize * 4];
+    memset(icon.pixels, 0, targetSize * targetSize * 4); // Заполняем прозрачным черным цветом
+
+    // Вычисляем коэффициент масштабирования
+    float scale = std::min((float)targetSize / width, (float)targetSize / height);
+    int newWidth = static_cast<int>(width * scale);
+    int newHeight = static_cast<int>(height * scale);
+
+    // Вычисляем отступы для центрирования
+    int offsetX = (targetSize - newWidth) / 2;
+    int offsetY = (targetSize - newHeight) / 2;
+
+    // Копируем и масштабируем изображение
+    for (int y = 0; y < newHeight; ++y) {
+        for (int x = 0; x < newWidth; ++x) {
+            int srcX = static_cast<int>(x / scale);
+            int srcY = static_cast<int>(y / scale);
+            int srcIndex = (srcY * width + srcX) * 4;
+            int dstIndex = ((y + offsetY) * targetSize + (x + offsetX)) * 4;
+
+            for (int c = 0; c < 4; ++c) {
+                icon.pixels[dstIndex + c] = data[srcIndex + c];
+            }
+        }
+    }
+
+    stbi_image_free(data);
+    return icon;
 }
 
 int main()
@@ -675,15 +719,13 @@ int main()
     std::string cpuInfo = getCPUInfo();
     std::string ramInfo = getRAMInfo();
 
-    // Замените код создания иконки на следующий:
-    GLFWimage icon;
-    int channels;
-    icon.pixels = stbi_load("include/ico.png", &icon.width, &icon.height, &channels, 4);
+    // В функции main(), замените код установки иконки на следующий:
+    GLFWimage icon = createTransparentIcon("include/ico.png", 32); // 32x32 - типичный размер иконки
     if (icon.pixels) {
         glfwSetWindowIcon(window, 1, &icon);
-        stbi_image_free(icon.pixels);
+        delete[] icon.pixels; // Освобождаем память
     } else {
-        std::cerr << "Failed to load icon" << std::endl;
+        std::cerr << "Failed to create icon" << std::endl;
     }
 
     // Главный цикл рендеринга
