@@ -21,6 +21,11 @@
 #include <stdexcept>
 #include <array>
 #include <fstream>
+#include <GLFW/glfw3.h>
+
+// В начале файла добавьте:
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 // Добавьте эти определения в начало файла, после включения библиотек
 // const int FPS_HISTORY_SIZE = 200;
@@ -669,6 +674,17 @@ int main()
     // В функции main(), после получения информации о GPU и VRAM, добавьте:
     std::string cpuInfo = getCPUInfo();
     std::string ramInfo = getRAMInfo();
+
+    // Замените код создания иконки на следующий:
+    GLFWimage icon;
+    int channels;
+    icon.pixels = stbi_load("include/ico.png", &icon.width, &icon.height, &channels, 4);
+    if (icon.pixels) {
+        glfwSetWindowIcon(window, 1, &icon);
+        stbi_image_free(icon.pixels);
+    } else {
+        std::cerr << "Failed to load icon" << std::endl;
+    }
 
     // Главный цикл рендеринга
     while (!glfwWindowShouldClose(window))

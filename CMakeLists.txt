@@ -15,6 +15,10 @@ find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
 find_package(Freetype REQUIRED)
 
+# Добавьте эту строку после project(RGBench)
+include_directories(${CMAKE_SOURCE_DIR}/include)
+
+# Измените строку add_executable на:
 add_executable(${PROJECT_NAME} main.cpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${FREETYPE_INCLUDE_DIRS})
@@ -30,7 +34,8 @@ target_link_libraries(${PROJECT_NAME}
 # Устанавливаем имя исполняемого файла
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "rgbench")
 
-# Добавляем цель install
-install(TARGETS ${PROJECT_NAME}
-    RUNTIME DESTINATION bin
-)
+# Добавьте эту строку перед install
+file(COPY ${CMAKE_SOURCE_DIR}/include/ico.png DESTINATION ${CMAKE_BINARY_DIR})
+
+# Добавьте эту строку в секцию install
+install(FILES ${CMAKE_SOURCE_DIR}/include/ico.png DESTINATION share/rgbench)
