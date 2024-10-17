@@ -5,7 +5,7 @@
             "name": "Debug",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/GPUTest",
+            "program": "${workspaceFolder}/build/rgbench",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
