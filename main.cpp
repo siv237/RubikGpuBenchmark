@@ -28,22 +28,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-// Добавьте эти определения в начало файла, после включения библиотек
-// const int FPS_HISTORY_SIZE = 200;
-// std::vector<float> fpsHistory(FPS_HISTORY_SIZE, 0.0f);
-// std::vector<float> avgFpsHistory(FPS_HISTORY_SIZE, 0.0f);
-
-// Добавьте эту глобальную переменную
 int currentGraphIndex = 0;
-
-// Добавьте эти глобальные переменные
 float minFps = std::numeric_limits<float>::max();
 float maxFps = 0.0f;
-
-// Объявите shaderProgram глобально
 unsigned int shaderProgram;
-
-// Добавьте эту глобальную переменную в начало файла
 unsigned int lineVAO, lineVBO;
 unsigned int lineShaderProgram;
 
@@ -108,7 +96,7 @@ std::string_view textFragmentShaderSource = R"(
     }
 )";
 
-// Добавьте эти шейдеры для линий
+// шейдеры для линий
 std::string_view lineVertexShaderSource = R"(
     #version 330 core
     layout (location = 0) in vec2 aPos;
@@ -199,9 +187,7 @@ void loadFont()
         };
         Characters.insert(std::pair<char, Character>(c, character));
 
-        // Удалите или закомментируйте эту строку
-        // std::cout << "Loaded character " << c << " with size " << face->glyph->bitmap.width << "x" << face->glyph->bitmap.rows << std::endl;
-    }
+     }
 
     FT_Done_Face(face);
     FT_Done_FreeType(ft);
@@ -271,7 +257,7 @@ void checkShaderCompileErrors(unsigned int shader, std::string type)
     }
 }
 
-// Добавьте эту функцию перед main():
+
 void checkOpenGLError(const char* stmt, const char* fname, int line)
 {
     GLenum err = glGetError();
@@ -282,13 +268,12 @@ void checkOpenGLError(const char* stmt, const char* fname, int line)
     }
 }
 
-// Используйте этот макрос после каждой важной операции OpenGL
+// Используем этот макрос после каждой важной операции OpenGL
 #define GL_CHECK(stmt) do { \
         stmt; \
         checkOpenGLError(#stmt, __FILE__, __LINE__); \
     } while (0)
 
-// Добавьте эту функцию перед функцией main()
 [[nodiscard]] std::string getGPUName() {
     const GLubyte* renderer = glGetString(GL_RENDERER);
     if (renderer) {
@@ -297,7 +282,6 @@ void checkOpenGLError(const char* stmt, const char* fname, int line)
     return "Неизвестная видеоката";
 }
 
-// Добавьте ту функцию перед main():
 float getTextWidth(const std::string& text, float scale) {
     float width = 0.0f;
     for (char c : text) {
@@ -307,7 +291,6 @@ float getTextWidth(const std::string& text, float scale) {
     return width;
 }
 
-// Измените функцию drawLine следующим образом:
 void drawLine(float x1, float y1, float x2, float y2, glm::vec3 color, unsigned int program) {
     glUseProgram(program);
     
@@ -330,7 +313,7 @@ void drawLine(float x1, float y1, float x2, float y2, glm::vec3 color, unsigned 
     glDrawArrays(GL_LINES, 0, 2);
 }
 
-// В начале файла обновите константы для графика
+// константы для графика
 const int GRAPH_WIDTH = 550;
 const int GRAPH_HEIGHT = 100;
 const int GRAPH_BOTTOM = 50;  // Увеличим отступ снизу
@@ -341,13 +324,9 @@ std::vector<float> avgFpsHistory(GRAPH_WIDTH, -1.0f);
 float graphMin = 0.0f;
 float graphMax = 5000.0f; // Начальное максимальное значение
 
-// Добавьте эту переменную в начало файла
 double lastGraphUpdateTime = 0.0;
-
-// Добавьте эту переменную в начало файла, где объявлены другие глоальные переменные
 bool isFirstValidMeasurement = true;
 
-// Добавьте эту функцию перед функцией main()
 std::string getMonitorInfo(GLFWwindow* window) {
     GLFWmonitor* monitor = glfwGetWindowMonitor(window);
     if (!monitor) {
@@ -366,7 +345,6 @@ std::string getMonitorInfo(GLFWwindow* window) {
     return ss.str();
 }
 
-// Добавьте эту функцию перед main()
 std::string exec(const char* cmd) {
     std::array<char, 128> buffer;
     std::string result;
@@ -408,8 +386,6 @@ std::string exec(const char* cmd) {
     return "VRAM: " + result;
 }
 
-// Добавьте эти функции перед main()
-
 std::string getCPUInfo() {
     std::ifstream cpuinfo("/proc/cpuinfo");
     std::string line;
@@ -442,7 +418,6 @@ std::string getRAMInfo() {
     return "RAM: " + ss.str();
 }
 
-// Добавьте эту функцию перед main()
 GLFWimage createTransparentIcon(const char* filename, int targetSize) {
     GLFWimage icon = {};
     int width, height, channels;
@@ -487,7 +462,6 @@ GLFWimage createTransparentIcon(const char* filename, int targetSize) {
     return icon;
 }
 
-// Добавьте эти константы в начало файла
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 800;
 const float TEXT_SCALE = 0.4f;
@@ -511,7 +485,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     
-    // Добавьте эту строку, чтобы запретить изменение размера ока
+    // запретить изменение размера ока
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
     // Создание окна
@@ -599,11 +573,9 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    // Добавьте эту строку в функцию main() после инициализации OpenGL
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // В функции main(), после инициализации OpenGL, добавьте:
     glGenVertexArrays(1, &lineVAO);
     glGenBuffers(1, &lineVBO);
     glBindVertexArray(lineVAO);
@@ -614,7 +586,7 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    // Компиляция шейдеро для линий
+    // Компиляция шейдеров для линий
     unsigned int lineVertexShader = glCreateShader(GL_VERTEX_SHADER);
     const char* lineVertexShaderSourcePtr = lineVertexShaderSource.data();
     glShaderSource(lineVertexShader, 1, &lineVertexShaderSourcePtr, NULL);
@@ -712,32 +684,22 @@ int main()
     std::string fpsText = "FPS: 0";
     std::string avgFpsText = "Avg: 0";
 
-    // Дбавьте эту переменную пере циклом рендеринга
     double fps = 0.0;
 
-    // В функции main() после инициализации OpenGL добавьте:
     std::string gpuName = getGPUName();
 
-    // Добавьте эти переменные в начало функции main(), после инициализации GLFW и OpenGL:
     float cameraDistance = 5.0f;
     float minDistance = 3.0f;
     float maxDistance = 7.0f;
     float zoomSpeed = 0.5f;
 
-    // Добавьте эту строку в начало функции main(), после инициализации GLFW
     auto startTime = std::chrono::steady_clock::now();
 
-    // В функции main(), после инициализации GLFW и создания окна, добавьте:
     std::string monitorInfo = getMonitorInfo(window);
-
-    // В функции main(), после инициализации OpenGL, добавьте:
     std::string vramInfo = getVRAMInfo();
-
-    // В функции main(), после получения информации о GPU и VRAM, добавьте:
     std::string cpuInfo = getCPUInfo();
     std::string ramInfo = getRAMInfo();
 
-    // В функции main(), замените код установки иконки на следующий:
     GLFWimage icon = createTransparentIcon("include/ico.png", 32); // 32x32 - типичный размер иконки
     if (icon.pixels) {
         glfwSetWindowIcon(window, 1, &icon);
@@ -746,10 +708,6 @@ int main()
         std::cerr << "Failed to create icon" << std::endl;
     }
 
-    // Удалите или закомментируйте эту строку в начале функции main():
-    // int nbFrames = 0;
-
-    // Оставьте только одно объявление nbFrames в начале функции main():
     auto lastFPSUpdateTime = std::chrono::steady_clock::now();
 
     // Главный цикл рендеринга
@@ -763,9 +721,6 @@ int main()
         
         if (timeSinceLastUpdate >= 1.0) { // Если прошла 1 секунда
             fps = static_cast<double>(nbFrames) / timeSinceLastUpdate;
-            
-            // Удалите или закомментируйте эту строку:
-            // std::cout << "Debug: nbFrames = " << nbFrames << ", timeSinceLastUpdate = " << timeSinceLastUpdate << std::endl;
             
             if (fps > 0) {
                 if (isFirstValidMeasurement) {
@@ -861,7 +816,6 @@ int main()
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-        // После вызовов glGetUniformLocation добавьте проверку:
         if (viewLoc == GL_INVALID_INDEX) {
             std::cerr << "Failed to get uniform location for 'view'" << std::endl;
             // Обработка ошибки
@@ -889,8 +843,6 @@ int main()
                 }
             }
         }
-
-        // В главном цикле рендеринга замените код отрисовки графика и текста на следующий:
 
         // Отрисовка графика
         glDisable(GL_DEPTH_TEST);
@@ -974,7 +926,7 @@ int main()
         renderText(ramInfo, textX, textY, textScale, glm::vec3(0.7f, 1.0f, 0.7f)); // Светло-зеленый цвет
         textY -= lineSpacing;
 
-        // Рендеринг информации �� мониторе
+        // Рендеринг информации о мониторе
         renderText(monitorInfo, textX, textY, textScale, glm::vec3(0.7f, 0.7f, 0.7f)); // Светло-серый цвет
 
         // Рендеринг FPS и AVG FPS рядом с графиком
@@ -1003,9 +955,6 @@ int main()
     }
 
     // Выводим сглаженное значение FPS в консоль перед завершением программы
-    // Удлите или закомментируйте эту строку
-    // std::cout << "Smoothed Average FPS: " << std::fixed << std::setprecision(2) << fpsEstimate << std::endl;
-
     // Очистка ресурсов
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
