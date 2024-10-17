@@ -12,6 +12,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Добавим флаги компилятора для поиска системных заголовочных файлов
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/usr/include/c++/9 -I/usr/include/x86_64-linux-gnu/c++/9")
 
+# Установим предпочтение GLVND для OpenGL
+set(OpenGL_GL_PREFERENCE GLVND)
+
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(glfw3 REQUIRED)
