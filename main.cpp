@@ -22,6 +22,7 @@
 #include <array>
 #include <fstream>
 #include <GLFW/glfw3.h>
+#include <string_view>
 
 // В начале файла добавьте:
 #define STB_IMAGE_IMPLEMENTATION
@@ -57,7 +58,7 @@ std::map<char, Character> Characters;
 unsigned int textVAO, textVBO;
 unsigned int textShaderProgram;
 
-const char* vertexShaderSource = R"(
+std::string_view vertexShaderSource = R"(
     #version 330 core
     layout (location = 0) in vec3 aPos;
     layout (location = 1) in vec3 aColor;
@@ -72,7 +73,7 @@ const char* vertexShaderSource = R"(
     }
 )";
 
-const char* fragmentShaderSource = R"(
+std::string_view fragmentShaderSource = R"(
     #version 330 core
     in vec3 ourColor;
     out vec4 FragColor;
@@ -82,7 +83,7 @@ const char* fragmentShaderSource = R"(
     }
 )";
 
-const char* textVertexShaderSource = R"(
+std::string_view textVertexShaderSource = R"(
     #version 330 core
     layout (location = 0) in vec4 vertex; // <vec2 pos, vec2 tex>
     out vec2 TexCoords;
@@ -94,7 +95,7 @@ const char* textVertexShaderSource = R"(
     }
 )";
 
-const char* textFragmentShaderSource = R"(
+std::string_view textFragmentShaderSource = R"(
     #version 330 core
     in vec2 TexCoords;
     out vec4 color;
@@ -108,7 +109,7 @@ const char* textFragmentShaderSource = R"(
 )";
 
 // Добавьте эти шейдеры для линий
-const char* lineVertexShaderSource = R"(
+std::string_view lineVertexShaderSource = R"(
     #version 330 core
     layout (location = 0) in vec2 aPos;
     uniform mat4 projection;
@@ -118,7 +119,7 @@ const char* lineVertexShaderSource = R"(
     }
 )";
 
-const char* lineFragmentShaderSource = R"(
+std::string_view lineFragmentShaderSource = R"(
     #version 330 core
     out vec4 FragColor;
     uniform vec3 color;
@@ -288,12 +289,12 @@ void checkOpenGLError(const char* stmt, const char* fname, int line)
     } while (0)
 
 // Добавьте эту функцию перед функцией main()
-std::string getGPUName() {
+[[nodiscard]] std::string getGPUName() {
     const GLubyte* renderer = glGetString(GL_RENDERER);
     if (renderer) {
         return std::string(reinterpret_cast<const char*>(renderer));
     }
-    return "Неизвестная видеока��та";
+    return "Неизвестная видеоката";
 }
 
 // Добавьте ту функцию перед main():
@@ -343,7 +344,7 @@ float graphMax = 5000.0f; // Начальное максимальное зна�
 // Добавьте эту переменную в начало файла
 double lastGraphUpdateTime = 0.0;
 
-// Добавьте эту переменную в начало файла, где объявлены другие глобальные переменные
+// Добавьте эту переменную в начало файла, где объявлены другие глоальные переменные
 bool isFirstValidMeasurement = true;
 
 // Добавьте эту функцию перед функцией main()
@@ -379,7 +380,7 @@ std::string exec(const char* cmd) {
     return result;
 }
 
-std::string getVRAMInfo() {
+[[nodiscard]] std::string getVRAMInfo() {
     std::string result;
     try {
         result = exec("glxinfo | grep 'Video memory'");
@@ -455,8 +456,8 @@ GLFWimage createTransparentIcon(const char* filename, int targetSize) {
     // Создаем новое изображение с заданным размером и прозрачным фоном
     icon.width = targetSize;
     icon.height = targetSize;
-    icon.pixels = new unsigned char[targetSize * targetSize * 4];
-    memset(icon.pixels, 0, targetSize * targetSize * 4); // Заполняем прозрачным черным цветом
+    std::unique_ptr<unsigned char[]> pixels(new unsigned char[targetSize * targetSize * 4]);
+    memset(pixels.get(), 0, targetSize * targetSize * 4); // Заполняем прозрачным черным цветом
 
     // Вычисляем коэффициент масштабирования
     float scale = std::min((float)targetSize / width, (float)targetSize / height);
@@ -467,7 +468,7 @@ GLFWimage createTransparentIcon(const char* filename, int targetSize) {
     int offsetX = (targetSize - newWidth) / 2;
     int offsetY = (targetSize - newHeight) / 2;
 
-    // Копируем и масштабируем изображение
+    // Копиру и масштбие иображение
     for (int y = 0; y < newHeight; ++y) {
         for (int x = 0; x < newWidth; ++x) {
             int srcX = static_cast<int>(x / scale);
@@ -476,14 +477,25 @@ GLFWimage createTransparentIcon(const char* filename, int targetSize) {
             int dstIndex = ((y + offsetY) * targetSize + (x + offsetX)) * 4;
 
             for (int c = 0; c < 4; ++c) {
-                icon.pixels[dstIndex + c] = data[srcIndex + c];
+                pixels[dstIndex + c] = data[srcIndex + c];
             }
         }
     }
 
     stbi_image_free(data);
+    icon.pixels = pixels.release();
     return icon;
 }
+
+// Добавьте эти константы в начало файла
+const int WINDOW_WIDTH = 800;
+const int WINDOW_HEIGHT = 800;
+const float TEXT_SCALE = 0.4f;
+const float LINE_SPACING = 25.0f;
+constexpr int FPS_HISTORY_SIZE = 200;
+constexpr float MIN_DISTANCE = 3.0f;
+constexpr float MAX_DISTANCE = 7.0f;
+constexpr float ZOOM_SPEED = 0.5f;
 
 int main()
 {
@@ -503,8 +515,8 @@ int main()
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
     // Создание окна
-    GLFWwindow* window = glfwCreateWindow(800, 800, "Rubik GPU Benchmark", NULL, NULL);
-    if (window == NULL)
+    GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Rubik GPU Benchmark", nullptr, nullptr);
+    if (window == nullptr)
     {
         std::cerr << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -523,7 +535,7 @@ int main()
     glfwSwapInterval(0);
 
     // Добавляем переменные для подсчета FPS и фильтра Калмна
-    double lastTime = glfwGetTime();
+    auto lastTime = std::chrono::steady_clock::now();
     int nbFrames = 0;
     double fpsEstimate = 0.0;
     double fpsErrorEstimate = 1000.0;
@@ -533,12 +545,14 @@ int main()
 
     // Компиляция шейдеров
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    const char* vertexShaderSourcePtr = vertexShaderSource.data();
+    glShaderSource(vertexShader, 1, &vertexShaderSourcePtr, NULL);
     glCompileShader(vertexShader);
     checkShaderCompileErrors(vertexShader, "VERTEX");
 
     unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+    const char* fragmentShaderSourcePtr = fragmentShaderSource.data();
+    glShaderSource(fragmentShader, 1, &fragmentShaderSourcePtr, NULL);
     glCompileShader(fragmentShader);
     checkShaderCompileErrors(fragmentShader, "FRAGMENT");
 
@@ -555,12 +569,14 @@ int main()
     loadFont();
 
     unsigned int textVertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(textVertexShader, 1, &textVertexShaderSource, NULL);
+    const char* textVertexShaderSourcePtr = textVertexShaderSource.data();
+    glShaderSource(textVertexShader, 1, &textVertexShaderSourcePtr, NULL);
     glCompileShader(textVertexShader);
     checkShaderCompileErrors(textVertexShader, "TEXT_VERTEX");
 
     unsigned int textFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(textFragmentShader, 1, &textFragmentShaderSource, NULL);
+    const char* textFragmentShaderSourcePtr = textFragmentShaderSource.data();
+    glShaderSource(textFragmentShader, 1, &textFragmentShaderSourcePtr, NULL);
     glCompileShader(textFragmentShader);
     checkShaderCompileErrors(textFragmentShader, "TEXT_FRAGMENT");
 
@@ -594,18 +610,20 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, lineVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void*>(0));
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
     // Компиляция шейдеро для линий
     unsigned int lineVertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(lineVertexShader, 1, &lineVertexShaderSource, NULL);
+    const char* lineVertexShaderSourcePtr = lineVertexShaderSource.data();
+    glShaderSource(lineVertexShader, 1, &lineVertexShaderSourcePtr, NULL);
     glCompileShader(lineVertexShader);
     checkShaderCompileErrors(lineVertexShader, "LINE_VERTEX");
 
     unsigned int lineFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(lineFragmentShader, 1, &lineFragmentShaderSource, NULL);
+    const char* lineFragmentShaderSourcePtr = lineFragmentShaderSource.data();
+    glShaderSource(lineFragmentShader, 1, &lineFragmentShaderSourcePtr, NULL);
     glCompileShader(lineFragmentShader);
     checkShaderCompileErrors(lineFragmentShader, "LINE_FRAGMENT");
 
@@ -625,12 +643,12 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, lineVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * GRAPH_WIDTH * 4, NULL, GL_DYNAMIC_DRAW);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), static_cast<void*>(0));
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
     // Вершины куба с цветами
-    float vertices[] = {
+    std::array<float, 216> vertices = {
         // позиции          // цвета
         -0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,
          0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,
@@ -682,7 +700,7 @@ int main()
     glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
@@ -728,16 +746,28 @@ int main()
         std::cerr << "Failed to create icon" << std::endl;
     }
 
+    // Удалите или закомментируйте эту строку в начале функции main():
+    // int nbFrames = 0;
+
+    // Оставьте только одно объявление nbFrames в начале функции main():
+    auto lastFPSUpdateTime = std::chrono::steady_clock::now();
+
     // Главный цикл рендеринга
     while (!glfwWindowShouldClose(window))
     {
         // Измеряем FPS
-        double currentTime = glfwGetTime();
+        auto currentTime = std::chrono::steady_clock::now();
         nbFrames++;
-        if (currentTime - lastTime >= 1.0) { // Если прошла 1 секунда
-            fps = static_cast<double>(nbFrames) / (currentTime - lastTime);
+        
+        auto timeSinceLastUpdate = std::chrono::duration_cast<std::chrono::duration<double>>(currentTime - lastFPSUpdateTime).count();
+        
+        if (timeSinceLastUpdate >= 1.0) { // Если прошла 1 секунда
+            fps = static_cast<double>(nbFrames) / timeSinceLastUpdate;
             
-            if (fps > 0) { // Проверяем, что FPS больше 0
+            // Удалите или закомментируйте эту строку:
+            // std::cout << "Debug: nbFrames = " << nbFrames << ", timeSinceLastUpdate = " << timeSinceLastUpdate << std::endl;
+            
+            if (fps > 0) {
                 if (isFirstValidMeasurement) {
                     fpsEstimate = fps;
                     isFirstValidMeasurement = false;
@@ -747,8 +777,8 @@ int main()
                 }
 
                 // Обновляем данные графика
-                fpsHistory[currentGraphX] = fps;
-                avgFpsHistory[currentGraphX] = fpsEstimate;
+                fpsHistory[currentGraphX] = static_cast<float>(fps);
+                avgFpsHistory[currentGraphX] = static_cast<float>(fpsEstimate);
                 currentGraphX = (currentGraphX + 1) % GRAPH_WIDTH;
 
                 // Находим минимальное и максимальное значения FPS в истории
@@ -781,16 +811,15 @@ int main()
                 glfwSetWindowTitle(window, ss.str().c_str());
 
                 // Рассчитываем время от старта программы
-                auto currentTimePoint = std::chrono::steady_clock::now();
-                auto elapsedSeconds = std::chrono::duration_cast<std::chrono::seconds>(currentTimePoint - startTime).count();
+                auto elapsedSeconds = std::chrono::duration_cast<std::chrono::seconds>(currentTime - startTime).count();
 
-                // Изменяем формат вывода в консоль
-                std::cout << "Time: " << elapsedSeconds << "; FPS: " << std::fixed << std::setprecision(2) << fps
-                          << "; AVG: " << std::fixed << std::setprecision(2) << fpsEstimate << std::endl;
+                // Изменяем формат вывода в консоль, оставляем только информацию о FPS
+                std::cout << "Time: " << elapsedSeconds << "s; FPS: " << std::fixed << std::setprecision(2) << fps
+                          << "; AVG FPS: " << std::fixed << std::setprecision(2) << fpsEstimate << std::endl;
             }
 
             nbFrames = 0;
-            lastTime = currentTime;
+            lastFPSUpdateTime = currentTime;
         }
 
         // Обновляем текст FPS каждый кадр
@@ -821,7 +850,7 @@ int main()
             glm::vec3(0.0f, 0.0f, 0.0f),
             glm::vec3(0.0f, 1.0f, 0.0f)
         );
-        projection = glm::perspective(glm::radians(45.0f), 800.0f / 800.0f, 0.1f, 100.0f);
+        projection = glm::perspective(glm::radians(45.0f), static_cast<float>(WINDOW_WIDTH) / WINDOW_HEIGHT, 0.1f, 100.0f);
 
         // Вращение вего кубика Рубика
         glm::mat4 rubiksCubeRotation = glm::rotate(glm::mat4(1.0f), (float)glfwGetTime(), glm::vec3(0.5f, 1.0f, 0.0f));
@@ -831,6 +860,12 @@ int main()
         unsigned int projectionLoc = glGetUniformLocation(shaderProgram, "projection");
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+        // После вызовов glGetUniformLocation добавьте проверку:
+        if (viewLoc == GL_INVALID_INDEX) {
+            std::cerr << "Failed to get uniform location for 'view'" << std::endl;
+            // Обработка ошибки
+        }
 
         // Определение размеров и зазоров
         float cubeSize = 0.3f;
@@ -843,7 +878,7 @@ int main()
             for (int y = -1; y <= 1; y++) {
                 for (int z = -1; z <= 1; z++) {
                     glm::mat4 model = glm::mat4(1.0f);
-                    model = rubiksCubeRotation * model; // Применяем вращение ко всему кубику Рубика
+                    model = rubiksCubeRotation * model; // Примеяем вращение ко всему кубику Рубика
                     model = glm::translate(model, glm::vec3(x * totalSize, y * totalSize, z * totalSize));
                     model = glm::scale(model, glm::vec3(cubeSize, cubeSize, cubeSize));
 
@@ -918,10 +953,10 @@ int main()
         glUseProgram(textShaderProgram);
         glUniformMatrix4fv(glGetUniformLocation(textShaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(glm::ortho(0.0f, 800.0f, 0.0f, 800.0f)));
 
-        float textScale = 0.4f;
+        float textScale = TEXT_SCALE;
         float textX = 10.0f; // Отступ слева
         float textY = 780.0f; // Начальная позиция сверху
-        float lineSpacing = 25.0f; // Расстояние между строками
+        float lineSpacing = LINE_SPACING; // Расстояние между строками
 
         // Рендеринг имени GPU
         renderText(gpuName, textX, textY, textScale, glm::vec3(1.0f, 1.0f, 0.0f)); // Желтый цвет
@@ -939,7 +974,7 @@ int main()
         renderText(ramInfo, textX, textY, textScale, glm::vec3(0.7f, 1.0f, 0.7f)); // Светло-зеленый цвет
         textY -= lineSpacing;
 
-        // Рендеринг информации о мониторе
+        // Рендеринг информации �� мониторе
         renderText(monitorInfo, textX, textY, textScale, glm::vec3(0.7f, 0.7f, 0.7f)); // Светло-серый цвет
 
         // Рендеринг FPS и AVG FPS рядом с графиком
@@ -954,7 +989,7 @@ int main()
         renderText(fpsText, GRAPH_LEFT, GRAPH_BOTTOM - 30, textScale, glm::vec3(1.0f, 0.0f, 0.0f)); // Красный цвет
         renderText(avgFpsText, GRAPH_LEFT + 150, GRAPH_BOTTOM - 30, textScale, glm::vec3(0.0f, 1.0f, 0.0f)); // Зеленый цвет
 
-        // Добавляем подписи к графику
+        // Добавляем подписи к гафику
         std::string maxFpsLabel = "Max: " + std::to_string(static_cast<int>(graphMax));
         std::string minFpsLabel = "Min: " + std::to_string(static_cast<int>(graphMin));
         renderText(maxFpsLabel, GRAPH_LEFT + GRAPH_WIDTH + 5, GRAPH_BOTTOM + GRAPH_HEIGHT - 20, 0.4f, glm::vec3(1.0f, 1.0f, 1.0f));
