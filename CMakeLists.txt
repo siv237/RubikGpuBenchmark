@@ -31,7 +31,7 @@ include_directories(
     ${FREETYPE_INCLUDE_DIRS}
     /usr/include
     /usr/local/include
-    /usr/include/freetype2  # Добавим путь к заголовочным файлам FreeType
+    /usr/include/freetype2
 )
 
 add_executable(${PROJECT_NAME} main.cpp)
@@ -47,8 +47,26 @@ target_link_libraries(${PROJECT_NAME}
 # Устанавливаем имя исполняемого файла
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "rgbench")
 
-# Копируем иконку в директорию сборки
-file(COPY ${CMAKE_SOURCE_DIR}/include/ico.png DESTINATION ${CMAKE_BINARY_DIR})
+# Определяем переменную для пути к иконке
+set(ICON_PATH "${CMAKE_SOURCE_DIR}/include/ico.png")
 
-# Устанавливаем иконку
-install(FILES ${CMAKE_SOURCE_DIR}/include/ico.png DESTINATION share/rgbench)
+# Проверяем существование файла иконки
+if(EXISTS ${ICON_PATH})
+    # Копируем иконку в директорию сборки
+    configure_file(${ICON_PATH} ${CMAKE_BINARY_DIR}/ico.png COPYONLY)
+
+    # Устанавливаем иконку
+    install(FILES ${CMAKE_BINARY_DIR}/ico.png DESTINATION share/rgbench)
+
+    # Добавляем определение пути к иконке для использования в коде
+    target_compile_definitions(${PROJECT_NAME} PRIVATE 
+        ICON_PATH="${CMAKE_BINARY_DIR}/ico.png"
+    )
+else()
+    target_compile_definitions(${PROJECT_NAME} PRIVATE ICON_PATH="")
+endif()
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE CMAKE_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+
+# После определения ICON_PATH
+file(COPY ${ICON_PATH} DESTINATION ${CMAKE_BINARY_DIR})

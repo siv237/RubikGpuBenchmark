@@ -5,9 +5,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 #include <string>
-#include <iomanip> // Для форматирования вывода
-#include <sstream>
-#include <vector>
+#include <iomanip> 
 #include <utility>
 #include <cmath>
 #include <map>
@@ -15,7 +13,7 @@
 #include FT_FREETYPE_H
 #include <chrono>
 #include <ctime>
-#include <algorithm> // Добавьте эту строку в начало файла
+#include <algorithm> 
 #include <cstdio>
 #include <memory>
 #include <stdexcept>
@@ -23,8 +21,9 @@
 #include <fstream>
 #include <GLFW/glfw3.h>
 #include <string_view>
+#include <filesystem>
 
-// В начале файла добавьте:
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
@@ -268,7 +267,7 @@ void checkOpenGLError(const char* stmt, const char* fname, int line)
     }
 }
 
-// Используем этот макрос после каждой важной операции OpenGL
+// Использу эо �� после каждой важной перации OpenGL
 #define GL_CHECK(stmt) do { \
         stmt; \
         checkOpenGLError(#stmt, __FILE__, __LINE__); \
@@ -421,10 +420,9 @@ std::string getRAMInfo() {
 GLFWimage createTransparentIcon(const char* filename, int targetSize) {
     GLFWimage icon = {};
     int width, height, channels;
-    unsigned char* data = stbi_load(filename, &width, &height, &channels, 4); // Всегда загружаем с альфа-каналом
+    unsigned char* data = stbi_load(filename, &width, &height, &channels, 4);
 
     if (!data) {
-        std::cerr << "Failed to load icon: " << filename << std::endl;
         return icon;
     }
 
@@ -432,7 +430,7 @@ GLFWimage createTransparentIcon(const char* filename, int targetSize) {
     icon.width = targetSize;
     icon.height = targetSize;
     std::unique_ptr<unsigned char[]> pixels(new unsigned char[targetSize * targetSize * 4]);
-    memset(pixels.get(), 0, targetSize * targetSize * 4); // Заполняем прозрачным черным цветом
+    memset(pixels.get(), 0, targetSize * targetSize * 4);
 
     // Вычисляем коэффициент масштабирования
     float scale = std::min((float)targetSize / width, (float)targetSize / height);
@@ -443,7 +441,7 @@ GLFWimage createTransparentIcon(const char* filename, int targetSize) {
     int offsetX = (targetSize - newWidth) / 2;
     int offsetY = (targetSize - newHeight) / 2;
 
-    // Копиру и масштбие иображение
+    // Копируем и масштабируем изображение
     for (int y = 0; y < newHeight; ++y) {
         for (int x = 0; x < newWidth; ++x) {
             int srcX = static_cast<int>(x / scale);
@@ -473,6 +471,25 @@ constexpr float ZOOM_SPEED = 0.5f;
 
 int main()
 {
+    std::vector<std::string> iconPaths = {
+        "include/ico.png",
+        "../include/ico.png",
+        "ico.png",
+        "../ico.png"
+    };
+
+    std::string iconPath;
+    for (const auto& path : iconPaths) {
+        if (std::filesystem::exists(path)) {
+            iconPath = path;
+            break;
+        }
+    }
+
+    if (iconPath.empty()) {
+        std::cerr << "Предупреждение: файл иконки не найден. Программа продолжит работу без иконки." << std::endl;
+    }
+
     // Инициализация GLFW
     if (!glfwInit())
     {
@@ -497,6 +514,13 @@ int main()
         return -1;
     }
     glfwMakeContextCurrent(window);
+
+    // Добавьте эту проверку
+    const char* error_description;
+    int error_code = glfwGetError(&error_description);
+    if (error_code != GLFW_NO_ERROR) {
+        std::cerr << "GLFW Error (" << error_code << "): " << error_description << std::endl;
+    }
 
     // Инициизация GLEW
     if (glewInit() != GLEW_OK)
@@ -700,12 +724,15 @@ int main()
     std::string cpuInfo = getCPUInfo();
     std::string ramInfo = getRAMInfo();
 
-    GLFWimage icon = createTransparentIcon("include/ico.png", 32); // 32x32 - типичный размер иконки
-    if (icon.pixels) {
-        glfwSetWindowIcon(window, 1, &icon);
-        delete[] icon.pixels; // Освобождаем память
-    } else {
-        std::cerr << "Failed to create icon" << std::endl;
+    // Используем уже определенную переменную iconPath
+    if (!iconPath.empty()) {
+        GLFWimage icon = createTransparentIcon(iconPath.c_str(), 32);
+        if (icon.pixels) {
+            glfwSetWindowIcon(window, 1, &icon);
+            stbi_image_free(icon.pixels);
+        } else {
+            std::cerr << "Не удалось загрузить иконку" << std::endl;
+        }
     }
 
     auto lastFPSUpdateTime = std::chrono::steady_clock::now();
@@ -719,7 +746,7 @@ int main()
         
         auto timeSinceLastUpdate = std::chrono::duration_cast<std::chrono::duration<double>>(currentTime - lastFPSUpdateTime).count();
         
-        if (timeSinceLastUpdate >= 1.0) { // Если прошла 1 секунда
+        if (timeSinceLastUpdate >= 1.0) { // Если пошла 1 секунда
             fps = static_cast<double>(nbFrames) / timeSinceLastUpdate;
             
             if (fps > 0) {
@@ -769,8 +796,10 @@ int main()
                 auto elapsedSeconds = std::chrono::duration_cast<std::chrono::seconds>(currentTime - startTime).count();
 
                 // Изменяем формат вывода в консоль, оставляем только информацию о FPS
-                std::cout << "Time: " << elapsedSeconds << "s; FPS: " << std::fixed << std::setprecision(2) << fps
-                          << "; AVG FPS: " << std::fixed << std::setprecision(2) << fpsEstimate << std::endl;
+                std::cout << "Время: " << std::setw(4) << elapsedSeconds << "с | FPS: " 
+                          << std::setw(7) << std::fixed << std::setprecision(2) << fps 
+                          << " | Среднее FPS: " << std::setw(7) << std::fixed << std::setprecision(2) << fpsEstimate 
+                          << std::endl;
             }
 
             nbFrames = 0;
@@ -865,7 +894,7 @@ int main()
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(frameVertices), frameVertices);
         glDrawArrays(GL_LINES, 0, 8);
 
-        // Рисем текущий FPS (красные точки)
+        // Рисем текущи FPS (красные токи)
         glUniform3f(glGetUniformLocation(lineShaderProgram, "color"), 1.0f, 0.0f, 0.0f); // Красный цвет
         std::vector<float> pointVertices;
         for (int i = 0; i < GRAPH_WIDTH; i++) {
@@ -941,7 +970,7 @@ int main()
         renderText(fpsText, GRAPH_LEFT, GRAPH_BOTTOM - 30, textScale, glm::vec3(1.0f, 0.0f, 0.0f)); // Красный цвет
         renderText(avgFpsText, GRAPH_LEFT + 150, GRAPH_BOTTOM - 30, textScale, glm::vec3(0.0f, 1.0f, 0.0f)); // Зеленый цвет
 
-        // Добавляем подписи к гафику
+        // Добвяем подписи к гафику
         std::string maxFpsLabel = "Max: " + std::to_string(static_cast<int>(graphMax));
         std::string minFpsLabel = "Min: " + std::to_string(static_cast<int>(graphMin));
         renderText(maxFpsLabel, GRAPH_LEFT + GRAPH_WIDTH + 5, GRAPH_BOTTOM + GRAPH_HEIGHT - 20, 0.4f, glm::vec3(1.0f, 1.0f, 1.0f));
@@ -961,5 +990,13 @@ int main()
     glDeleteProgram(shaderProgram);
 
     glfwTerminate();
+
+    // После выхода из главного цикла
+    std::cout << "\nТест завершен.\n" << std::endl;
+    std::cout << "Итоговые результаты:" << std::endl;
+    std::cout << "Минимальное FPS: " << std::fixed << std::setprecision(2) << minFps << std::endl;
+    std::cout << "Максимальное FPS: " << std::fixed << std::setprecision(2) << maxFps << std::endl;
+    std::cout << "Среднее FPS: " << std::fixed << std::setprecision(2) << fpsEstimate << std::endl;
+
     return 0;
 }
