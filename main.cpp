@@ -5,24 +5,19 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 #include <string>
-#include <iomanip> 
-#include <utility>
-#include <cmath>
+#include <iomanip>
+#include <sstream>
+#include <vector>
 #include <map>
+#include <chrono>
+#include <algorithm>
+#include <limits>
+#include <cmath>
 #include <ft2build.h>
 #include FT_FREETYPE_H
-#include <chrono>
-#include <ctime>
-#include <algorithm> 
-#include <cstdio>
-#include <memory>
-#include <stdexcept>
-#include <array>
-#include <fstream>
-#include <GLFW/glfw3.h>
-#include <string_view>
 #include <filesystem>
-
+#include <fstream>
+#include <string_view>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -267,7 +262,7 @@ void checkOpenGLError(const char* stmt, const char* fname, int line)
     }
 }
 
-// Использу эо �� после каждой важной перации OpenGL
+// Использу эо  после каждой важной перации OpenGL
 #define GL_CHECK(stmt) do { \
         stmt; \
         checkOpenGLError(#stmt, __FILE__, __LINE__); \
@@ -487,7 +482,7 @@ int main()
     }
 
     if (iconPath.empty()) {
-        std::cerr << "Предупреждение: файл иконки не найден. Программа продолжит работу без иконки." << std::endl;
+        std::cerr << "Предупреждение: файл иконки не найден. Программа продолжит работу бе иконки." << std::endl;
     }
 
     // Инициализация GLFW
@@ -1000,3 +995,4 @@ int main()
 
     return 0;
 }
+
