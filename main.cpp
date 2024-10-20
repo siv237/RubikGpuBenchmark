@@ -18,6 +18,7 @@
 #include <filesystem>
 #include <fstream>
 #include <string_view>
+#include <openssl/md5.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -28,6 +29,9 @@ float maxFps = 0.0f;
 unsigned int shaderProgram;
 unsigned int lineVAO, lineVBO;
 unsigned int lineShaderProgram;
+
+// Добавляем объявление переменной programVersion
+std::string programVersion;
 
 struct Character {
     unsigned int TextureID;
@@ -307,7 +311,7 @@ void drawLine(float x1, float y1, float x2, float y2, glm::vec3 color, unsigned 
     glDrawArrays(GL_LINES, 0, 2);
 }
 
-// константы для графика
+// константы для рафика
 const int GRAPH_WIDTH = 550;
 const int GRAPH_HEIGHT = 100;
 const int GRAPH_BOTTOM = 50;  // Увеличим отступ снизу
@@ -463,6 +467,33 @@ constexpr int FPS_HISTORY_SIZE = 200;
 constexpr float MIN_DISTANCE = 3.0f;
 constexpr float MAX_DISTANCE = 7.0f;
 constexpr float ZOOM_SPEED = 0.5f;
+
+std::string calculateMD5(const std::string& filename) {
+    std::ifstream file(filename, std::ios::binary);
+    if (!file) {
+        return "Unknown";
+    }
+
+    MD5_CTX md5Context;
+    MD5_Init(&md5Context);
+
+    char buf[1024 * 16];
+    while (file.good()) {
+        file.read(buf, sizeof(buf));
+        MD5_Update(&md5Context, buf, file.gcount());
+    }
+
+    unsigned char result[MD5_DIGEST_LENGTH];
+    MD5_Final(result, &md5Context);
+
+    std::stringstream ss;
+    ss << std::hex << std::setfill('0');
+    for (int i = 0; i < MD5_DIGEST_LENGTH; ++i) {
+        ss << std::setw(2) << static_cast<unsigned>(result[i]);
+    }
+
+    return ss.str().substr(0, 8); // Возвращаем первые 8 символов хеша
+}
 
 int main()
 {
@@ -732,6 +763,9 @@ int main()
 
     auto lastFPSUpdateTime = std::chrono::steady_clock::now();
 
+    // Вычисляем версию программы
+    programVersion = calculateMD5(__FILE__);
+
     // Главный цикл рендеринга
     while (!glfwWindowShouldClose(window))
     {
@@ -812,7 +846,7 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Активация шейдерной программы
+        // Активация шейдерной прграммы
         glUseProgram(shaderProgram);
 
         // Обновление расстояния камеры
@@ -971,6 +1005,11 @@ int main()
         renderText(maxFpsLabel, GRAPH_LEFT + GRAPH_WIDTH + 5, GRAPH_BOTTOM + GRAPH_HEIGHT - 20, 0.4f, glm::vec3(1.0f, 1.0f, 1.0f));
         renderText(minFpsLabel, GRAPH_LEFT + GRAPH_WIDTH + 5, GRAPH_BOTTOM, 0.4f, glm::vec3(1.0f, 1.0f, 1.0f));
 
+        // Рендеринг версии программы в правом нижнем углу
+        std::string versionText = "Version: " + programVersion;
+        float versionTextWidth = getTextWidth(versionText, textScale);
+        renderText(versionText, WINDOW_WIDTH - versionTextWidth - 10, 10, textScale, glm::vec3(1.0f, 1.0f, 1.0f)); // Белый цвет
+
         glEnable(GL_DEPTH_TEST);
 
         // Обмен буферов и обрабтка событий GLFW
@@ -988,6 +1027,7 @@ int main()
 
     // После выхода из главного цикла
     std::cout << "\nТест завершен.\n" << std::endl;
+    std::cout << "Версия программы: " << programVersion << std::endl;
     std::cout << "Итоговые результаты:" << std::endl;
     std::cout << "Минимальное FPS: " << std::fixed << std::setprecision(2) << minFps << std::endl;
     std::cout << "Максимальное FPS: " << std::fixed << std::setprecision(2) << maxFps << std::endl;

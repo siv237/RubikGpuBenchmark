@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Добавим флаги компилятора для поиска системных заголовочных файлов
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/usr/include/c++/9 -I/usr/include/x86_64-linux-gnu/c++/9")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/usr/include/c++/9 -I/usr/include/x86_64-linux-gnu/c++/9 -Wno-deprecated-declarations")
 
 # Установим предпочтение GLVND для OpenGL
 set(OpenGL_GL_PREFERENCE GLVND)
@@ -20,6 +20,7 @@ find_package(GLEW REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
 find_package(Freetype REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 # Добавим пути для поиска заголовочных файлов
 include_directories(
@@ -42,6 +43,7 @@ target_link_libraries(${PROJECT_NAME}
     glfw
     ${GLM_LIBRARIES}
     ${FREETYPE_LIBRARIES}
+    OpenSSL::Crypto
 )
 
 # Устанавливаем имя исполняемого файла
