@@ -1,4 +1,5 @@
 name: rgbench
+base: core22
 version: '1.0'
 summary: Rubik's Cube GPU Benchmark
 description: |
@@ -8,21 +9,90 @@ description: |
 grade: stable
 confinement: strict
 
+architectures:
+  - build-on: amd64
+
 apps:
   rgbench:
     command: bin/rgbench
-    extensions: [gnome-3-38]
-    plugs: [opengl, x11, wayland]
+    plugs: 
+      - opengl
+      - x11
+      - wayland
+      - desktop
+      - desktop-legacy
+      - hardware-observe
 
 parts:
   rgbench:
     plugin: cmake
     source: .
     build-packages:
+      - g++
       - libglew-dev
       - libglfw3-dev
       - libfreetype6-dev
+      - libssl-dev
+      - libglm-dev
     stage-packages:
-      - libglew2.1
+      - libglew2.2
       - libglfw3
       - libfreetype6
+      - libssl3
+      - libglm-dev
+      - libx11-6
+      - libxcursor1
+      - libxinerama1
+      - libxrandr2
+      - libopengl0
+      - libgl1-mesa-dri
+      - libgl1-mesa-glx
+      - libglx-mesa0
+      - mesa-utils
+      - libpng16-16
+      - libjpeg-turbo8
+      - libglvnd0
+      - libegl1
+      - libgles2
+    override-build: |
+      craftctl default
+      if [ -f rgbench ]; then
+        mkdir -p $SNAPCRAFT_PART_INSTALL/usr/bin
+        cp rgbench $SNAPCRAFT_PART_INSTALL/usr/bin/
+      else
+        echo "Error: rgbench executable not found"
+        exit 1
+      fi
+      if [ -f $SNAPCRAFT_PART_SRC/include/ico.png ]; then
+        mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/rgbench
+        cp $SNAPCRAFT_PART_SRC/include/ico.png $SNAPCRAFT_PART_INSTALL/usr/share/rgbench/
+      else
+        echo "Warning: icon file not found, skipping"
+      fi
+      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/rgbench
+      cp $SNAPCRAFT_PART_SRC/main.cpp $SNAPCRAFT_PART_INSTALL/usr/share/rgbench/
+    override-prime: |
+      craftctl default
+      mkdir -p bin
+      cp usr/bin/rgbench bin/
+      if [ -f usr/share/rgbench/ico.png ]; then
+        echo "Icon file found at usr/share/rgbench/ico.png"
+      else
+        echo "Warning: icon file not found in usr/share/rgbench"
+      fi
+      echo "Contents of usr/share/rgbench:"
+      ls -l usr/share/rgbench
+    build-attributes: [keep-execstack]
+
+layout:
+  /usr/lib/$SNAPCRAFT_ARCH_TRIPLET/libGL.so.1:
+    symlink: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/libGL.so.1
+  /usr/lib/$SNAPCRAFT_ARCH_TRIPLET/dri:
+    bind: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/dri
+
+environment:
+  LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/:$SNAP/lib/$SNAPCRAFT_ARCH_TRIPLET/
+  LIBGL_DRIVERS_PATH: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/dri
+  RGBENCH_ICON_PATH: $SNAP/usr/share/rgbench/ico.png
+  RGBENCH_MAIN_CPP: $SNAP/usr/share/rgbench/main.cpp
+  RGBENCH_VERSION: ${SNAPCRAFT_PROJECT_VERSION}
