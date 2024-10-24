@@ -30,8 +30,13 @@ unsigned int shaderProgram;
 unsigned int lineVAO, lineVBO;
 unsigned int lineShaderProgram;
 
-// Добавляем объявление переменной programVersion
-std::string programVersion;
+// Заменяем объявление programVersion
+#ifndef PROGRAM_VERSION
+#define PROGRAM_VERSION "unknown"
+#endif
+
+// Убираем const, чтобы можно было изменять значение
+std::string programVersion = PROGRAM_VERSION;
 
 struct Character {
     unsigned int TextureID;
@@ -763,8 +768,9 @@ int main()
 
     auto lastFPSUpdateTime = std::chrono::steady_clock::now();
 
-    // Вычисляем версию программы
-    programVersion = calculateMD5(__FILE__);
+    // Теперь версия программы устанавливается через cmake
+    // Убираем эту строку, так как версия уже установлена через define
+    // programVersion = calculateMD5(__FILE__);
 
     // Главный цикл рендеринга
     while (!glfwWindowShouldClose(window))
@@ -981,7 +987,7 @@ int main()
         textY -= lineSpacing;
 
         // Рендеринг RAM
-        renderText(ramInfo, textX, textY, textScale, glm::vec3(0.7f, 1.0f, 0.7f)); // Светло-зеленый цвет
+        renderText(ramInfo, textX, textY, textScale, glm::vec3(0.7f, 1.0f, 0.7f)); // Светло-зеленый цвт
         textY -= lineSpacing;
 
         // Рендеринг информации о мониторе

@@ -55,7 +55,18 @@ parts:
       - libegl1
       - libgles2
     override-build: |
-      craftctl default
+      # Получаем MD5 хеш от main.cpp для версии
+      VERSION=$(md5sum $SNAPCRAFT_PART_SRC/main.cpp | cut -c1-8)
+      
+      # Используем cmake с корректной передачей версии
+      cmake \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DVERSION="${VERSION}" \
+        $SNAPCRAFT_PART_SRC
+      
+      # Собираем проект
+      make
+      
       if [ -f rgbench ]; then
         mkdir -p $SNAPCRAFT_PART_INSTALL/usr/bin
         cp rgbench $SNAPCRAFT_PART_INSTALL/usr/bin/
@@ -63,6 +74,7 @@ parts:
         echo "Error: rgbench executable not found"
         exit 1
       fi
+      
       if [ -f $SNAPCRAFT_PART_SRC/include/ico.png ]; then
         mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/rgbench
         cp $SNAPCRAFT_PART_SRC/include/ico.png $SNAPCRAFT_PART_INSTALL/usr/share/rgbench/

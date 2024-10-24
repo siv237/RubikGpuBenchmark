@@ -72,3 +72,16 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE CMAKE_SOURCE_DIR="${CMAKE_SOU
 
 # После определения ICON_PATH
 file(COPY ${ICON_PATH} DESTINATION ${CMAKE_BINARY_DIR})
+
+# Добавляем определение версии
+if(DEFINED VERSION)
+    add_definitions(-DPROGRAM_VERSION="${VERSION}")
+else()
+    # Если версия не определена через CMAKE, вычисляем её
+    execute_process(
+        COMMAND bash -c "md5sum ${CMAKE_SOURCE_DIR}/main.cpp | cut -c1-8"
+        OUTPUT_VARIABLE VERSION
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    add_definitions(-DPROGRAM_VERSION="${VERSION}")
+endif()
